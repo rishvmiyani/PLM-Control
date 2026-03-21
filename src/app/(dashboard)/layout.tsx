@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import DashboardShell from "@/components/layout/DashboardShell"
 import SessionProvider from "@/components/layout/SessionProvider"
+import MessagingWidget from "@/components/layout/Message"
 
 export default async function DashboardLayout({
   children,
@@ -17,6 +18,7 @@ export default async function DashboardLayout({
   return (
     <SessionProvider session={session}>
       <DashboardShell>{children}</DashboardShell>
+      <MessagingWidget />
     </SessionProvider>
   )
 }

@@ -16,16 +16,16 @@ interface Props {
   }
 }
 
-const PIE_COLORS = ["#3b82f6", "#22c55e", "#ef4444", "#f97316"]
+const PIE_COLORS = ["#8b3b9e", "#be71d1", "#e6c6ed", "#8b3b9e"]
 
 export default function AdminCharts({ data }: Props) {
   const barData = [
-    { name: "Open ECOs", value: data.openECOs, fill: "#3b82f6" },
-    { name: "Done ECOs", value: data.doneECOs, fill: "#22c55e" },
-    { name: "Conflicts", value: data.conflictECOs, fill: "#ef4444" },
-    { name: "High Risk", value: data.highRiskECOs, fill: "#f97316" },
-    { name: "Products", value: data.totalProducts, fill: "#8b5cf6" },
-    { name: "BOMs", value: data.totalBOMs, fill: "#06b6d4" },
+    { name: "Open ECOs", value: data.openECOs, fill: "#8b3b9e" },
+    { name: "Done ECOs", value: data.doneECOs, fill: "#be71d1" },
+    { name: "Conflicts", value: data.conflictECOs, fill: "#e6c6ed" },
+    { name: "High Risk", value: data.highRiskECOs, fill: "#8b3b9e" },
+    { name: "Products", value: data.totalProducts, fill: "#be71d1" },
+    { name: "BOMs", value: data.totalBOMs, fill: "#e6c6ed" },
   ]
 
   const pieData = [
@@ -36,31 +36,35 @@ export default function AdminCharts({ data }: Props) {
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="font-['DM_Sans'] grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-8">
       {/* Bar Chart */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-5">
-        <h3 className="font-semibold text-zinc-800 text-sm mb-4">Platform Overview</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={barData} barSize={32}>
+      <div className="glass-card">
+        <h3 className="font-semibold text-[#8b3b9e] text-sm mb-6 tracking-wide">Platform Overview</h3>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={barData} barSize={36}>
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10, fill: "#a1a1aa" }}
+              tick={{ fontSize: 11, fontFamily: 'DM Sans', fill: "#8b3b9e" }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: "#a1a1aa" }}
+              tick={{ fontSize: 11, fontFamily: 'DM Sans', fill: "#8b3b9e" }}
               axisLine={false}
               tickLine={false}
             />
             <Tooltip
               contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid #e4e4e7",
-                fontSize: "12px",
+                borderRadius: "12px",
+                border: "1px solid rgba(139, 59, 158, 0.2)",
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                backdropFilter: "blur(20px)",
+                fontSize: "13px",
+                fontFamily: 'DM Sans',
+                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
               }}
             />
-            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+            <Bar dataKey="value" radius={[8, 8, 0, 0]}>
               {barData.map((entry, index) => (
                 <Cell key={index} fill={entry.fill} />
               ))}
@@ -70,17 +74,17 @@ export default function AdminCharts({ data }: Props) {
       </div>
 
       {/* Pie Chart */}
-      <div className="bg-white border border-zinc-200 rounded-xl p-5">
-        <h3 className="font-semibold text-zinc-800 text-sm mb-4">ECO Status Distribution</h3>
-        <ResponsiveContainer width="100%" height={220}>
+      <div className="glass-card">
+        <h3 className="font-semibold text-[#8b3b9e] text-sm mb-6 tracking-wide">ECO Status Distribution</h3>
+        <ResponsiveContainer width="100%" height={240}>
           <PieChart>
             <Pie
               data={pieData}
               cx="50%"
               cy="50%"
-              innerRadius={55}
-              outerRadius={85}
-              paddingAngle={3}
+              innerRadius={60}
+              outerRadius={90}
+              paddingAngle={4}
               dataKey="value"
             >
               {pieData.map((_, index) => (
@@ -89,15 +93,23 @@ export default function AdminCharts({ data }: Props) {
             </Pie>
             <Tooltip
               contentStyle={{
-                borderRadius: "8px",
-                border: "1px solid #e4e4e7",
-                fontSize: "12px",
+                borderRadius: "12px",
+                border: "1px solid rgba(139, 59, 158, 0.2)",
+                backgroundColor: "rgba(255, 255, 255, 0.95)",
+                backdropFilter: "blur(20px)",
+                fontSize: "13px",
+                fontFamily: 'DM Sans',
+                boxShadow: "0 20px 40px rgba(0, 0, 0, 0.1)",
               }}
             />
             <Legend
               iconType="circle"
-              iconSize={8}
-              wrapperStyle={{ fontSize: "11px" }}
+              iconSize={10}
+              wrapperStyle={{ 
+                fontSize: "12px", 
+                fontFamily: 'DM Sans',
+                color: "#8b3b9e"
+              }}
             />
           </PieChart>
         </ResponsiveContainer>

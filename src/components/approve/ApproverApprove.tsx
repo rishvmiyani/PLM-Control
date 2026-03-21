@@ -303,38 +303,7 @@ const styles = `
 `;
 
 // ---- Icons (inline SVG) ----
-const Icon = {
-  Home: () => (
-    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" />
-    </svg>
-  ),
-  ChevronRight: () => (
-    <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-    </svg>
-  ),
-  OpenLink: () => (
-    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-    </svg>
-  ),
-  Check: () => (
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  ),
-  Info: () => (
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <circle cx="12" cy="12" r="10" /><path strokeLinecap="round" d="M12 8v4m0 4h.01" />
-    </svg>
-  ),
-  Changes: () => (
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-    </svg>
-  ),
-};
+
 
 // ---- Main Component ----
 export default function ECOApprovePage() {
@@ -366,7 +335,7 @@ export default function ECOApprovePage() {
 
   const handleApprove = () => {
     setStatus("approved");
-    showToast("ECO approved successfully!", "🎉");
+    showToast("ECO approved successfully!");
   };
 
   const statusCycle: StatusType[] = ["in_progress", "approved", "cancelled"];
@@ -400,22 +369,7 @@ export default function ECOApprovePage() {
   return (
     <>
       <style>{styles}</style>
-      <div className="eco-root">
-        {/* Topbar */}
-        <header className="topbar">
-          <div className="topbar-left">
-            <div className="topbar-logo">EC</div>
-            <nav className="topbar-breadcrumb">
-              <Icon.Home />
-              <span>Home</span>
-              <span className="sep"><Icon.ChevronRight /></span>
-              <span>O BoA</span>
-              <span className="sep"><Icon.ChevronRight /></span>
-              <span className="active">ECO Approval</span>
-            </nav>
-          </div>
-          <div className="topbar-title">Master UI</div>
-        </header>
+      
 
         <main className="page-wrap">
           {/* Notice */}

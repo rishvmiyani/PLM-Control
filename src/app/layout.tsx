@@ -13,8 +13,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body className={`${dmSans.variable} font-['DM_Sans'] bg-gradient-to-br from-slate-50 via-white to-[#e6c6ed]/20`}>
+        <SessionProvider>
+          <TooltipProvider>
+            {children}
+          </TooltipProvider>
+        </SessionProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   )

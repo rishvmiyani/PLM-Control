@@ -47,7 +47,7 @@ function TopBar({ onToggleSidebar, sidebarOpen }: Props) {
       </button>
 
       {/* New ECO button */}
-      <Link href="/eco/new">
+      <Link href="/eco/new" style={{ textDecoration: "none" }}>
         <button style={{
           display: "flex", alignItems: "center", gap: 6,
           padding: "8px 16px", borderRadius: 10,
@@ -55,7 +55,7 @@ function TopBar({ onToggleSidebar, sidebarOpen }: Props) {
           color: "#fff", border: "none", cursor: "pointer",
           fontSize: 13, fontWeight: 600,
           fontFamily: "'DM Sans', sans-serif",
-          boxShadow: "0 4px 14px rgba(139,59,158,0.30)",
+          boxShadow: "0 4px 14px rgba(187, 62, 218, 0.3)",
         }}>
           <Plus style={{ width: 15, height: 15 }} />
           New ECO

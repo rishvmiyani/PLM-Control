@@ -45,7 +45,7 @@ export function LoginForm() {
     <div
       style={{
         width: "100%",
-        maxWidth: 460,3
+        maxWidth: 460,
         background: "rgba(255,255,255,0.72)",
         backdropFilter: "blur(24px)",
         WebkitBackdropFilter: "blur(24px)",
@@ -57,7 +57,7 @@ export function LoginForm() {
       }}
     >
       {/* Logo */}
-      <div style={{ textAlign: "centper", marginBottom: 28 }}>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <div style={{
             width: 56, height: 56,

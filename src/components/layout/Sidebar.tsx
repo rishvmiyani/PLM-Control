@@ -73,19 +73,23 @@ function Sidebar({ isOpen }: Props) {
           padding: "18px 16px 16px",
           borderBottom: "1px solid rgba(190,113,209,0.12)",
         }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 10,
-            background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+        <div style={{
+            width: 72, height: 32, borderRadius: 10,
+            backgroundImage: "url('../public/logo.png')",
+            backgroundSize: "contain",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            backgroundColor: "#e8e4f0",   
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <Layers style={{ width: 16, height: 16, color: "#fff" }} />
           </div>
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: "#2d1a38", lineHeight: 1.2 }}>
-              EcoFlow PLM
+              CRISP
             </p>
-            <p style={{ fontSize: 10, color: "#9b6aab" }}>Product Lifecycle</p>
-          </div>
+            <p style={{ fontSize: 10, color: "#9b6aab" }}></p>
+               </div>
         </div>
 
         {/* Nav */}
@@ -148,30 +152,6 @@ function Sidebar({ isOpen }: Props) {
             )
           })}
         </nav>
-
-        {/* User profile at bottom */}
-        <div style={{
-          padding: "12px 14px",
-          borderTop: "1px solid rgba(190,113,209,0.12)",
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: "50%",
-            background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0,
-          }}>
-            {initials}
-          </div>
-          <div style={{ overflow: "hidden" }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "#2d1a38", margin: 0 }}>
-              {session?.user?.loginId ?? "User"}
-            </p>
-            <p style={{ fontSize: 10, color: "#9b6aab", margin: 0 }}>
-              {session?.user?.role ?? ""}
-            </p>
-          </div>
-        </div>
 
       </div>
     </aside>

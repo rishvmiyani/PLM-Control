@@ -287,4 +287,11 @@ glass-badge: bg-white/80 backdrop-blur-xl border-white/50 shadow-xl
   color:#8b3b9e;
   text-decoration:none;        /* re-enforce on hover */
 }
+.breadcrumb-link {
+  text-decoration: none;
+}
+.breadcrumb-link:hover {
+  color: #8b3b9e;
+  text-decoration: none;
+}
 

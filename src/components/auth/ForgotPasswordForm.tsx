@@ -56,7 +56,7 @@ export function ForgotPasswordForm() {
                 WebkitTextFillColor: "transparent",
               }}
             >
-              PLM Intelligence
+              CRISP
             </span>
           </div>
 

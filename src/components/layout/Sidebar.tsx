@@ -55,7 +55,6 @@ function Sidebar({ isOpen }: Props) {
 
   return (
     <aside
-<<<<<<< HEAD
 className="sidebar fixed top-0 left-0 h-full z-40 flex flex-col transition-all duration-300"
       style={{ width: isOpen ? 240 : 0, overflow: "hidden" }}
     >
@@ -151,7 +150,6 @@ className="sidebar fixed top-0 left-0 h-full z-40 flex flex-col transition-all d
             <p className="text-xs text-zinc-400">Signed in as</p>
             <p className="text-xs font-semibold text-zinc-700 mt-0.5">
               {session?.user?.loginId}
-=======
       style={{
         position: "fixed", top: 0, left: 0, height: "100%",
         width: isOpen ? 200 : 0, overflow: "hidden",
@@ -180,7 +178,6 @@ className="sidebar fixed top-0 left-0 h-full z-40 flex flex-col transition-all d
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: "#2d1a38", lineHeight: 1.2 }}>
               EcoFlow PLM
->>>>>>> beed07c (add new files and updates)
             </p>
             <p style={{ fontSize: 10, color: "#9b6aab" }}>Product Lifecycle</p>
           </div>

@@ -120,7 +120,7 @@ export default async function ECOConflictsPage({
       {conflicts.length === 0 && (
         <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center">
           <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-            <span className="text-2xl">✅</span>
+            <span className="text-2xl"></span>
           </div>
           <p className="font-semibold text-green-800">No Conflicts Detected</p>
           <p className="text-sm text-green-600 mt-1">

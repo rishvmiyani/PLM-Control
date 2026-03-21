@@ -1,18 +1,49 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import EngineeringDashboard from "@/components/dashboard/EngineeringDashboard"
-import ApproverDashboard from "@/components/dashboard/ApproverDashboard"
-import OperationsDashboard from "@/components/dashboard/OperationsDashboard"
-import AdminDashboard from "@/components/dashboard/AdminDashboard"
+
+export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  const session = await auth()
-  if (!session) redirect("/login")
+  let session
+
+  try {
+    session = await auth()
+  } catch (e) {
+    console.error("Auth error:", e)
+    redirect("/login")
+  }
+
+  if (!session?.user) {
+    redirect("/login")
+  }
 
   const role = session.user.role
 
-  if (role === "ENGINEERING") return <EngineeringDashboard />
-  if (role === "APPROVER") return <ApproverDashboard />
-  if (role === "OPERATIONS") return <OperationsDashboard />
-  return <AdminDashboard />
+  console.log("Dashboard role:", role) // ← check terminal
+
+  if (role === "ADMIN") {
+    const { default: AdminDashboard } = await import(
+      "@/components/dashboard/AdminDashboard"
+    )
+    return <AdminDashboard />
+  }
+
+  if (role === "ENGINEERING") {
+    const { default: EngineeringDashboard } = await import(
+      "@/components/dashboard/EngineeringDashboard"
+    )
+    return <EngineeringDashboard />
+  }
+
+  if (role === "APPROVER") {
+    const { default: ApproverDashboard } = await import(
+      "@/components/dashboard/ApproverDashboard"
+    )
+    return <ApproverDashboard />
+  }
+
+  const { default: OperationsDashboard } = await import(
+    "@/components/dashboard/OperationsDashboard"
+  )
+  return <OperationsDashboard />
 }

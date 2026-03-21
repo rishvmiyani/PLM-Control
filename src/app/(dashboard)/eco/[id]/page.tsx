@@ -5,10 +5,6 @@ import { useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { format } from "date-fns"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   ArrowLeft, ArrowRight, AlertTriangle,
   CheckCircle, Bot, ClipboardList,
@@ -50,29 +46,32 @@ interface ECODetail {
   currentProductSnapshot: Record<string, unknown>
 }
 
-const STAGE_COLORS: Record<string, string> = {
-  "New": "bg-zinc-100 text-zinc-700",
-  "Engineering Review": "bg-blue-100 text-blue-700",
-  "Approval": "bg-yellow-100 text-yellow-700",
-  "Done": "bg-green-100 text-green-700",
-  "Rejected": "bg-red-100 text-red-700",
+const STAGE_BADGE: Record<string, { bg: string; color: string; border: string }> = {
+  "New":                { bg: "#f3f3f3",    color: "#555",    border: "rgba(0,0,0,0.1)" },
+  "Engineering Review": { bg: "#e3f2fd",    color: "#1565c0", border: "rgba(21,101,192,0.2)" },
+  "Approval":           { bg: "#fff3e0",    color: "#e07b00", border: "rgba(224,123,0,0.2)" },
+  "Done":               { bg: "#e8f5e9",    color: "#2e7d32", border: "rgba(46,125,50,0.2)" },
+  "Rejected":           { bg: "#fce4ec",    color: "#c62828", border: "rgba(198,40,40,0.2)" },
 }
 
-const RISK_COLORS: Record<string, string> = {
-  LOW: "bg-green-500",
-  MEDIUM: "bg-yellow-500",
-  HIGH: "bg-orange-500",
-  CRITICAL: "bg-red-500",
+const RISK_COLOR: Record<string, string> = {
+  LOW: "#27ae60", MEDIUM: "#8b3b9e", HIGH: "#e07b00", CRITICAL: "#c62828",
 }
 
-const RISK_TEXT: Record<string, string> = {
-  LOW: "text-green-600",
-  MEDIUM: "text-yellow-600",
-  HIGH: "text-orange-600",
-  CRITICAL: "text-red-600",
+const RISK_BAR: Record<string, string> = {
+  LOW: "#27ae60", MEDIUM: "#8b3b9e", HIGH: "#e07b00", CRITICAL: "#c62828",
 }
 
 const STAGE_ORDER = ["New", "Engineering Review", "Approval", "Done"]
+
+const S: Record<string, React.CSSProperties> = {
+  card: {
+    background: "rgba(255,255,255,0.92)",
+    border: "1px solid rgba(190,113,209,0.13)",
+    borderRadius: 16,
+    boxShadow: "0 2px 12px rgba(139,59,158,0.06)",
+  },
+}
 
 export default function ECODetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -85,6 +84,7 @@ export default function ECODetailPage() {
   const [showRejectInput, setShowRejectInput] = useState(false)
   const [rippleAck, setRippleAck] = useState(false)
   const [actionError, setActionError] = useState("")
+  const [activeTab, setActiveTab] = useState("diff")
 
   async function fetchEco() {
     setLoading(true)
@@ -96,8 +96,7 @@ export default function ECODetailPage() {
   useEffect(() => { fetchEco() }, [id])
 
   async function handleApprove() {
-    setActionLoading(true)
-    setActionError("")
+    setActionLoading(true); setActionError("")
     const res = await fetch(`/api/eco/${id}/approve`, { method: "POST" })
     const data = await res.json()
     if (!res.ok) setActionError(data.error ?? "Approve failed")
@@ -106,8 +105,7 @@ export default function ECODetailPage() {
   }
 
   async function handleValidate() {
-    setActionLoading(true)
-    setActionError("")
+    setActionLoading(true); setActionError("")
     const res = await fetch(`/api/eco/${id}/validate`, { method: "POST" })
     const data = await res.json()
     if (!res.ok) setActionError(data.error ?? "Validate failed")
@@ -117,8 +115,7 @@ export default function ECODetailPage() {
 
   async function handleReject() {
     if (!rejectReason.trim()) return
-    setActionLoading(true)
-    setActionError("")
+    setActionLoading(true); setActionError("")
     const res = await fetch(`/api/eco/${id}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -126,29 +123,38 @@ export default function ECODetailPage() {
     })
     const data = await res.json()
     if (!res.ok) setActionError(data.error ?? "Reject failed")
-    else {
-      setShowRejectInput(false)
-      setRejectReason("")
-      await fetchEco()
-    }
+    else { setShowRejectInput(false); setRejectReason(""); await fetchEco() }
     setActionLoading(false)
   }
 
+  const font = "'DM Sans', sans-serif"
+
   if (loading) {
     return (
-      <div className="space-y-4 max-w-5xl">
-        <Skeleton className="h-10 w-2/3" />
-        <Skeleton className="h-6 w-1/3" />
-        <Skeleton className="h-64 w-full" />
+      <div style={{ fontFamily: font, maxWidth: 860 }}>
+        {[1,2,3].map(i => (
+          <div key={i} style={{
+            height: i === 1 ? 40 : i === 2 ? 24 : 180,
+            borderRadius: 12, marginBottom: 16,
+            background: "linear-gradient(90deg,#f0eaf5 0%,#e8dff0 50%,#f0eaf5 100%)",
+            animation: "shimmer 1.5s infinite",
+          }} />
+        ))}
       </div>
     )
   }
 
   if (!eco) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <p className="text-zinc-500">ECO not found</p>
-        <Link href="/eco"><Button variant="outline">Back to ECOs</Button></Link>
+      <div style={{ fontFamily: font, textAlign: "center", padding: 60 }}>
+        <p style={{ color: "#9b6aab", marginBottom: 16 }}>ECO not found</p>
+        <Link href="/eco">
+          <button style={{
+            padding: "8px 20px", borderRadius: 10, border: "1px solid rgba(139,59,158,0.3)",
+            background: "transparent", color: "#8b3b9e", cursor: "pointer",
+            fontFamily: font, fontSize: 13, fontWeight: 600,
+          }}>Back to ECOs</button>
+        </Link>
       </div>
     )
   }
@@ -156,97 +162,135 @@ export default function ECODetailPage() {
   const role = session?.user?.role ?? ""
   const isTerminal = eco.stage === "Done" || eco.stage === "Rejected"
   const hasConflict = eco.aiConflict.hasConflict
-
-  const canApprove = !isTerminal && !hasConflict &&
-    ["ADMIN", "APPROVER"].includes(role) &&
-    ["Engineering Review", "Approval"].includes(eco.stage)
-
-  const canValidate = !isTerminal && !hasConflict &&
-    ["ADMIN", "ENGINEERING"].includes(role) &&
-    eco.stage === "Engineering Review"
-
-  const canReject = !isTerminal && ["ADMIN", "APPROVER"].includes(role)
-
+  const canApprove = !isTerminal && !hasConflict && ["ADMIN","APPROVER"].includes(role) && ["Engineering Review","Approval"].includes(eco.stage)
+  const canValidate = !isTerminal && !hasConflict && ["ADMIN","ENGINEERING"].includes(role) && eco.stage === "Engineering Review"
+  const canReject = !isTerminal && ["ADMIN","APPROVER"].includes(role)
   const stageIndex = STAGE_ORDER.indexOf(eco.stage)
+  const stageBadge = STAGE_BADGE[eco.stage] ?? STAGE_BADGE["New"]
+
+  const TABS = [
+    { key: "diff",  label: "Diff",       icon: <GitCompare style={{ width: 14, height: 14 }} /> },
+    { key: "risk",  label: "Risk",       icon: <ShieldAlert style={{ width: 14, height: 14 }} /> },
+    { key: "ai",    label: "AI Summary", icon: <Bot style={{ width: 14, height: 14 }} /> },
+    { key: "audit", label: "Audit Log",  icon: <ClipboardList style={{ width: 14, height: 14 }} /> },
+  ]
 
   return (
-    <div className="space-y-5 max-w-5xl">
+    <div style={{ fontFamily: font, maxWidth: 860 }}>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
+      {/* ── Back + Header ── */}
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
           <Link href="/eco">
-            <Button variant="ghost" size="icon"><ArrowLeft className="w-4 h-4" /></Button>
+            <button style={{
+              width: 34, height: 34, borderRadius: 10,
+              border: "1px solid rgba(190,113,209,0.25)",
+              background: "rgba(255,255,255,0.8)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", flexShrink: 0, marginTop: 2,
+            }}>
+              <ArrowLeft style={{ width: 15, height: 15, color: "#8b3b9e" }} />
+            </button>
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-zinc-900">{eco.title}</h1>
-            <p className="text-sm text-zinc-400 mt-0.5">
-              {eco.product.name} v{eco.product.version} · {eco.type} ·
-              by {eco.user.loginId} · {format(new Date(eco.createdAt), "dd MMM yyyy")}
+            <h1 style={{ fontSize: "1.35rem", fontWeight: 700, color: "#2d1a38", margin: 0 }}>
+              {eco.title}
+            </h1>
+            <p style={{ fontSize: 12, color: "#9b6aab", margin: "5px 0 0" }}>
+              {eco.product.name} v{eco.product.version} · {eco.type} · by {eco.user.loginId} · {format(new Date(eco.createdAt), "dd MMM yyyy")}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-wrap shrink-0">
-          <span className={`text-xs px-3 py-1.5 rounded-full font-medium ${STAGE_COLORS[eco.stage] ?? "bg-zinc-100"}`}>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{
+            fontSize: 12, fontWeight: 600, padding: "4px 14px", borderRadius: 999,
+            background: stageBadge.bg, color: stageBadge.color,
+            border: `1px solid ${stageBadge.border}`,
+          }}>
             {eco.stage}
           </span>
-          <Badge variant={["CRITICAL", "HIGH"].includes(eco.aiRisk.level) ? "destructive" : "secondary"}>
+          <span style={{
+            fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 999,
+            background: `${RISK_COLOR[eco.aiRisk.level]}15`,
+            color: RISK_COLOR[eco.aiRisk.level],
+            border: `1px solid ${RISK_COLOR[eco.aiRisk.level]}30`,
+          }}>
             {eco.aiRisk.level} · {eco.aiRisk.score}/100
-          </Badge>
+          </span>
           {eco.versionUpdate && (
-            <Badge variant="outline" className="text-blue-600 border-blue-300 text-xs">
+            <span style={{
+              fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 999,
+              background: "rgba(33,150,243,0.08)", color: "#1565c0",
+              border: "1px solid rgba(33,150,243,0.2)",
+            }}>
               Version Bump
-            </Badge>
+            </span>
           )}
         </div>
       </div>
 
-      {/* Stage Stepper */}
-      <div className="flex items-center gap-0 bg-white border border-zinc-200 rounded-xl p-4">
+      {/* ── Stage Stepper ── */}
+      <div style={{ ...S.card, padding: "18px 24px", marginBottom: 16, display: "flex", alignItems: "center" }}>
         {STAGE_ORDER.map((s, i) => (
-          <div key={s} className="flex items-center flex-1">
-            <div className="flex flex-col items-center flex-1">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
-                i < stageIndex
-                  ? "bg-green-500 border-green-500 text-white"
-                  : i === stageIndex
-                  ? "bg-blue-500 border-blue-500 text-white"
-                  : "bg-white border-zinc-300 text-zinc-400"
-              }`}>
+          <div key={s} style={{ display: "flex", alignItems: "center", flex: 1 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: "50%",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 700,
+                background: i < stageIndex ? "#27ae60" : i === stageIndex ? "linear-gradient(135deg,#8b3b9e,#be71d1)" : "#f0eaf5",
+                color: i <= stageIndex ? "#fff" : "#c5a8d4",
+                border: i > stageIndex ? "2px solid rgba(190,113,209,0.2)" : "none",
+              }}>
                 {i < stageIndex ? "✓" : i + 1}
               </div>
-              <p className={`text-xs mt-1.5 font-medium text-center ${
-                i === stageIndex ? "text-blue-600" : i < stageIndex ? "text-green-600" : "text-zinc-400"
-              }`}>
+              <p style={{
+                fontSize: 11, marginTop: 6, fontWeight: 600, textAlign: "center",
+                color: i === stageIndex ? "#8b3b9e" : i < stageIndex ? "#27ae60" : "#c5a8d4",
+              }}>
                 {s}
               </p>
             </div>
             {i < STAGE_ORDER.length - 1 && (
-              <div className={`h-0.5 flex-1 mx-1 mb-4 ${i < stageIndex ? "bg-green-400" : "bg-zinc-200"}`} />
+              <div style={{
+                height: 2, flex: 1, marginBottom: 18, borderRadius: 2,
+                background: i < stageIndex ? "#27ae60" : "rgba(190,113,209,0.15)",
+              }} />
             )}
           </div>
         ))}
       </div>
 
-      {/* Conflict Banner */}
+      {/* ── Conflict Banner ── */}
       {hasConflict && (
-        <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl p-4">
-          <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-700">Conflict Detected — Approval Blocked</p>
-            <p className="text-sm text-red-600 mt-0.5">
-              Fields{" "}
-              <span className="font-mono font-medium">
-                {[...new Set(eco.aiConflict.conflictingFields.map((f) => f.field))].join(", ")}
-              </span>{" "}
+        <div style={{
+          display: "flex", alignItems: "flex-start", gap: 12,
+          background: "rgba(198,40,40,0.05)", border: "1px solid rgba(198,40,40,0.2)",
+          borderRadius: 14, padding: "14px 18px", marginBottom: 14,
+        }}>
+          <AlertTriangle style={{ width: 18, height: 18, color: "#c62828", flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#c62828", margin: 0 }}>
+              Conflict Detected — Approval Blocked
+            </p>
+            <p style={{ fontSize: 12, color: "#b71c1c", margin: "4px 0 8px" }}>
+              Fields <code style={{ fontWeight: 700 }}>
+                {[...new Set(eco.aiConflict.conflictingFields.map(f => f.field))].join(", ")}
+              </code>{" "}
               conflict with {eco.aiConflict.conflictingEcoIds.length} other open ECO(s).
             </p>
-            <div className="flex gap-2 mt-2 flex-wrap">
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {eco.aiConflict.conflictingEcoIds.map((eid) => (
                 <Link key={eid} href={`/eco/${eid}`}>
-                  <Badge variant="destructive" className="cursor-pointer text-xs">
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999,
+                    background: "rgba(198,40,40,0.1)", color: "#c62828",
+                    border: "1px solid rgba(198,40,40,0.2)", cursor: "pointer",
+                    textDecoration: "none",
+                  }}>
                     View Conflicting ECO →
-                  </Badge>
+                  </span>
                 </Link>
               ))}
             </div>
@@ -254,284 +298,350 @@ export default function ECODetailPage() {
         </div>
       )}
 
-      {/* Ripple Warning */}
+      {/* ── Ripple Warning ── */}
       {eco.ripple.affectedBOMIds.length > 0 && (
-        <div className={`flex items-start gap-3 border rounded-xl p-4 ${rippleAck ? "bg-zinc-50 border-zinc-200" : "bg-orange-50 border-orange-200"}`}>
-          <Waves className={`w-5 h-5 shrink-0 mt-0.5 ${rippleAck ? "text-zinc-400" : "text-orange-500"}`} />
-          <div className="flex-1">
-            <p className={`text-sm font-semibold ${rippleAck ? "text-zinc-500" : "text-orange-700"}`}>
+        <div style={{
+          display: "flex", alignItems: "flex-start", gap: 12,
+          background: rippleAck ? "rgba(0,0,0,0.02)" : "rgba(224,123,0,0.05)",
+          border: `1px solid ${rippleAck ? "rgba(0,0,0,0.08)" : "rgba(224,123,0,0.2)"}`,
+          borderRadius: 14, padding: "14px 18px", marginBottom: 14,
+        }}>
+          <Waves style={{ width: 18, height: 18, color: rippleAck ? "#c5a8d4" : "#e07b00", flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: rippleAck ? "#9b6aab" : "#e07b00", margin: 0 }}>
               Ripple Impact — {eco.ripple.affectedBOMIds.length} BOM(s) affected
             </p>
-            <ul className="mt-1 space-y-0.5">
+            <ul style={{ margin: "6px 0 10px", paddingLeft: 0, listStyle: "none" }}>
               {eco.ripple.affectedBOMs.slice(0, 4).map((b, i) => (
-                <li key={i} className="text-xs text-zinc-500">
-                  · {b.productName} BOM v{b.version} — uses{" "}
-                  <span className="font-medium">{b.componentProductName}</span> × {b.quantity}
+                <li key={i} style={{ fontSize: 12, color: "#9b6aab", marginBottom: 2 }}>
+                  · {b.productName} BOM v{b.version} — uses <strong>{b.componentProductName}</strong> × {b.quantity}
                 </li>
               ))}
             </ul>
-            {!rippleAck && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3 border-orange-300 text-orange-700 hover:bg-orange-100"
+            {!rippleAck ? (
+              <button
                 onClick={() => setRippleAck(true)}
+                style={{
+                  padding: "6px 14px", borderRadius: 8, cursor: "pointer",
+                  border: "1px solid rgba(224,123,0,0.3)", background: "rgba(224,123,0,0.06)",
+                  color: "#e07b00", fontSize: 12, fontWeight: 600, fontFamily: font,
+                }}
               >
                 I acknowledge ripple impact
-              </Button>
+              </button>
+            ) : (
+              <p style={{ fontSize: 12, color: "#c5a8d4", margin: 0 }}>✓ Acknowledged</p>
             )}
-            {rippleAck && <p className="text-xs text-zinc-400 mt-1">✓ Acknowledged</p>}
           </div>
         </div>
       )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="diff">
-        <TabsList>
-          <TabsTrigger value="diff" className="gap-1.5">
-            <GitCompare className="w-4 h-4" /> Diff
-          </TabsTrigger>
-          <TabsTrigger value="risk" className="gap-1.5">
-            <ShieldAlert className="w-4 h-4" /> Risk
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="gap-1.5">
-            <Bot className="w-4 h-4" /> AI Summary
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5">
-            <ClipboardList className="w-4 h-4" /> Audit Log
-          </TabsTrigger>
-        </TabsList>
+      {/* ── Tabs ── */}
+      <div style={{ ...S.card, marginBottom: 14, overflow: "hidden" }}>
+        {/* Tab bar */}
+        <div style={{
+          display: "flex", borderBottom: "1px solid rgba(190,113,209,0.1)",
+          padding: "0 8px",
+        }}>
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "12px 16px", border: "none", background: "transparent",
+                cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: font,
+                color: activeTab === t.key ? "#8b3b9e" : "#9b6aab",
+                borderBottom: activeTab === t.key ? "2px solid #8b3b9e" : "2px solid transparent",
+                marginBottom: -1, transition: "color 0.15s",
+              }}
+            >
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Diff Tab */}
-        <TabsContent value="diff" className="mt-4">
-          <div className="border border-zinc-200 rounded-xl overflow-hidden">
-            <div className="grid grid-cols-2 divide-x divide-zinc-200">
-              <div className="p-5 bg-red-50">
-                <p className="text-xs font-semibold text-red-500 uppercase tracking-widest mb-4">
-                  Before (Current)
+        {/* Diff tab */}
+        {activeTab === "diff" && (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid rgba(190,113,209,0.1)" }}>
+              <div style={{ padding: "20px 24px", background: "rgba(198,40,40,0.03)", borderRight: "1px solid rgba(190,113,209,0.1)" }}>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#c62828", letterSpacing: "0.1em", marginBottom: 16 }}>
+                  BEFORE (CURRENT)
                 </p>
-                <div className="space-y-3">
-                  {Object.keys(eco.proposedChanges).map((key) => (
-                    <div key={key} className="flex justify-between text-sm">
-                      <span className="font-mono text-zinc-400 text-xs">{key}</span>
-                      <span className="text-red-600 font-semibold">
-                        {eco.currentProductSnapshot[key] !== undefined
-                          ? String(eco.currentProductSnapshot[key])
-                          : "—"}
+                {Object.keys(eco.proposedChanges).map((key) => (
+                  <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <span style={{ fontSize: 11, color: "#9b6aab", fontFamily: "monospace" }}>{key}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "#c62828" }}>
+                      {eco.currentProductSnapshot[key] !== undefined ? String(eco.currentProductSnapshot[key]) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "20px 24px", background: "rgba(46,125,50,0.03)" }}>
+                <p style={{ fontSize: 10, fontWeight: 800, color: "#2e7d32", letterSpacing: "0.1em", marginBottom: 16 }}>
+                  AFTER (PROPOSED)
+                </p>
+                {Object.entries(eco.proposedChanges).map(([key, val]) => {
+                  const oldVal = eco.currentProductSnapshot[key]
+                  let pct = ""
+                  if (typeof oldVal === "number" && typeof val === "number" && oldVal !== 0) {
+                    const d = (((val - oldVal) / oldVal) * 100).toFixed(1)
+                    pct = `${Number(d) > 0 ? "+" : ""}${d}%`
+                  }
+                  return (
+                    <div key={key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                      <span style={{ fontSize: 11, color: "#9b6aab", fontFamily: "monospace" }}>{key}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: "#2e7d32" }}>
+                        {String(val)} {pct && <span style={{ fontSize: 11, color: "#9b6aab" }}>({pct})</span>}
                       </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-              <div className="p-5 bg-green-50">
-                <p className="text-xs font-semibold text-green-600 uppercase tracking-widest mb-4">
-                  After (Proposed)
-                </p>
-                <div className="space-y-3">
-                  {Object.entries(eco.proposedChanges).map(([key, val]) => {
-                    const oldVal = eco.currentProductSnapshot[key]
-                    let pct = ""
-                    if (typeof oldVal === "number" && typeof val === "number" && oldVal !== 0) {
-                      const d = (((val - oldVal) / oldVal) * 100).toFixed(1)
-                      pct = `${Number(d) > 0 ? "+" : ""}${d}%`
-                    }
-                    return (
-                      <div key={key} className="flex justify-between text-sm">
-                        <span className="font-mono text-zinc-400 text-xs">{key}</span>
-                        <span className="text-green-700 font-semibold">
-                          {String(val)}
-                          {pct && <span className="text-xs text-zinc-400 ml-1">({pct})</span>}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
+                  )
+                })}
               </div>
             </div>
-            <div className="flex items-center justify-center gap-2 border-t border-zinc-200 py-2.5 bg-zinc-50 text-xs text-zinc-400">
-              <ArrowRight className="w-3.5 h-3.5" />
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "10px", background: "#faf6fd",
+              fontSize: 12, color: "#9b6aab",
+            }}>
+              <ArrowRight style={{ width: 13, height: 13 }} />
               Effective {format(new Date(eco.effectiveDate), "dd MMM yyyy")}
             </div>
           </div>
-        </TabsContent>
+        )}
 
-        {/* Risk Tab */}
-        <TabsContent value="risk" className="mt-4">
-          <div className="bg-white border border-zinc-200 rounded-xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-zinc-800 flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-zinc-400" />
-                Risk Assessment
-              </h3>
-              <span className={`text-lg font-bold ${RISK_TEXT[eco.aiRisk.level] ?? "text-zinc-600"}`}>
+        {/* Risk tab */}
+        {activeTab === "risk" && (
+          <div style={{ padding: "24px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <ShieldAlert style={{ width: 18, height: 18, color: "#9b6aab" }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38" }}>Risk Assessment</span>
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 800, color: RISK_COLOR[eco.aiRisk.level] }}>
                 {eco.aiRisk.level} — {eco.aiRisk.score}/100
               </span>
             </div>
-            <div className="w-full bg-zinc-100 rounded-full h-3">
-              <div
-                className={`h-3 rounded-full transition-all ${RISK_COLORS[eco.aiRisk.level] ?? "bg-zinc-400"}`}
-                style={{ width: `${eco.aiRisk.score}%` }}
-              />
+            <div style={{
+              height: 10, background: "rgba(190,113,209,0.12)",
+              borderRadius: 999, overflow: "hidden", marginBottom: 20,
+            }}>
+              <div style={{
+                height: "100%", borderRadius: 999,
+                width: `${eco.aiRisk.score}%`,
+                background: RISK_BAR[eco.aiRisk.level],
+                transition: "width 0.5s",
+              }} />
             </div>
-            <ul className="space-y-2">
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {eco.aiRisk.reasons.length === 0 ? (
-                <li className="text-sm text-green-600">✓ No significant risk factors</li>
+                <li style={{ fontSize: 13, color: "#27ae60" }}>✓ No significant risk factors</li>
               ) : (
                 eco.aiRisk.reasons.map((r, i) => (
-                  <li key={i} className="text-sm text-zinc-500 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 shrink-0" />
-                    {r}
+                  <li key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#c5a8d4", flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: "#7c5f8a" }}>{r}</span>
                   </li>
                 ))
               )}
             </ul>
           </div>
-        </TabsContent>
+        )}
 
-        {/* AI Summary Tab */}
-        <TabsContent value="ai" className="mt-4">
-          <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <h3 className="font-semibold text-zinc-800 flex items-center gap-2 mb-4">
-              <Bot className="w-5 h-5 text-blue-500" />
-              AI-Generated Summary
-            </h3>
-            <pre className="whitespace-pre-wrap text-sm text-zinc-600 font-sans leading-relaxed">
-              {(eco as unknown as Record<string, unknown>).aiSummary as string ?? "Summary not available"}
-            </pre>
-          </div>
-        </TabsContent>
-
-        {/* Audit Tab */}
-        <TabsContent value="audit" className="mt-4">
-          <div className="bg-white border border-zinc-200 rounded-xl p-5">
-            <h3 className="font-semibold text-zinc-800 flex items-center gap-2 mb-5">
-              <ClipboardList className="w-5 h-5 text-zinc-400" />
-              Audit Trail
-            </h3>
-            <div className="space-y-4">
-              {eco.auditLogs.map((log, i) => (
-                <div key={log.id} className="flex items-start gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-400 mt-1 shrink-0" />
-                    {i < eco.auditLogs.length - 1 && (
-                      <div className="w-px h-8 bg-zinc-200 mt-1" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-zinc-700">{log.action}</p>
-                    {(log.oldValue || log.newValue) && (
-                      <p className="text-xs text-zinc-400">
-                        {log.oldValue} → {log.newValue}
-                      </p>
-                    )}
-                    <p className="text-xs text-zinc-400">
-                      by {log.user.loginId} ·{" "}
-                      {format(new Date(log.timestamp), "dd MMM yyyy, HH:mm")}
-                    </p>
-                  </div>
-                </div>
-              ))}
+        {/* AI Summary tab */}
+        {activeTab === "ai" && (
+          <div style={{ padding: "24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <Bot style={{ width: 18, height: 18, color: "#8b3b9e" }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38" }}>AI-Generated Summary</span>
             </div>
+            <p style={{
+              fontSize: 13, color: "#7c5f8a", lineHeight: 1.75,
+              background: "rgba(139,59,158,0.04)",
+              border: "1px solid rgba(190,113,209,0.12)",
+              borderRadius: 12, padding: "16px 18px", whiteSpace: "pre-wrap",
+            }}>
+              {(eco as unknown as Record<string, unknown>).aiSummary as string ?? "Summary not available"}
+            </p>
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
 
-      {/* Actions Panel */}
+        {/* Audit tab */}
+        {activeTab === "audit" && (
+          <div style={{ padding: "24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+              <ClipboardList style={{ width: 18, height: 18, color: "#9b6aab" }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38" }}>Audit Trail</span>
+            </div>
+            {eco.auditLogs.map((log, i) => (
+              <div key={log.id} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{
+                    width: 10, height: 10, borderRadius: "50%",
+                    background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+                    marginTop: 3, flexShrink: 0,
+                  }} />
+                  {i < eco.auditLogs.length - 1 && (
+                    <div style={{ width: 1, flex: 1, minHeight: 24, background: "rgba(190,113,209,0.2)", marginTop: 4 }} />
+                  )}
+                </div>
+                <div style={{ paddingBottom: 4 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#2d1a38", margin: 0 }}>{log.action}</p>
+                  {(log.oldValue || log.newValue) && (
+                    <p style={{ fontSize: 12, color: "#9b6aab", margin: "2px 0" }}>
+                      {log.oldValue} → {log.newValue}
+                    </p>
+                  )}
+                  <p style={{ fontSize: 11, color: "#c5a8d4", margin: 0 }}>
+                    by {log.user.loginId} · {format(new Date(log.timestamp), "dd MMM yyyy, HH:mm")}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Actions Panel ── */}
       {!isTerminal && (
-        <div className="bg-white border border-zinc-200 rounded-xl p-4 space-y-3">
-          <p className="text-sm font-semibold text-zinc-700">Actions</p>
+        <div style={{ ...S.card, padding: "20px 24px" }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#2d1a38", margin: "0 0 14px" }}>Actions</p>
 
           {actionError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-sm text-red-600">
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              background: "rgba(230,59,111,0.07)", border: "1px solid rgba(230,59,111,0.2)",
+              borderRadius: 10, padding: "10px 14px",
+              color: "#e63b6f", fontSize: 13, fontWeight: 500, marginBottom: 14,
+            }}>
+              <AlertTriangle style={{ width: 15, height: 15 }} />
               {actionError}
             </div>
           )}
 
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Validate button — Engineering Review stage */}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             {canValidate && (
-              <Button
+              <button
                 onClick={handleValidate}
                 disabled={actionLoading}
-                variant="outline"
-                className="gap-2 border-blue-300 text-blue-700 hover:bg-blue-50"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "10px 20px", borderRadius: 10,
+                  background: "rgba(33,150,243,0.08)",
+                  border: "1px solid rgba(33,150,243,0.25)",
+                  color: "#1565c0", fontSize: 13, fontWeight: 600,
+                  cursor: actionLoading ? "not-allowed" : "pointer",
+                  fontFamily: font, opacity: actionLoading ? 0.6 : 1,
+                }}
               >
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle style={{ width: 15, height: 15 }} />
                 Validate & Send to Approval
-              </Button>
+              </button>
             )}
 
-            {/* Approve button */}
             {canApprove && (
-              <Button
+              <button
                 onClick={handleApprove}
                 disabled={actionLoading || (eco.ripple.affectedBOMIds.length > 0 && !rippleAck)}
-                className="gap-2"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "10px 20px", borderRadius: 10,
+                  background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+                  border: "none", color: "#fff",
+                  fontSize: 13, fontWeight: 600,
+                  cursor: (actionLoading || (eco.ripple.affectedBOMIds.length > 0 && !rippleAck)) ? "not-allowed" : "pointer",
+                  fontFamily: font,
+                  opacity: (actionLoading || (eco.ripple.affectedBOMIds.length > 0 && !rippleAck)) ? 0.5 : 1,
+                  boxShadow: "0 4px 14px rgba(139,59,158,0.28)",
+                }}
               >
-                <CheckCircle className="w-4 h-4" />
+                <CheckCircle style={{ width: 15, height: 15 }} />
                 {eco.stage === "Approval" ? "Approve & Apply" : "Approve"}
-              </Button>
+              </button>
             )}
 
-            {/* Reject button */}
             {canReject && !showRejectInput && (
-              <Button
-                variant="destructive"
+              <button
                 onClick={() => setShowRejectInput(true)}
                 disabled={actionLoading}
-                className="gap-2"
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "10px 20px", borderRadius: 10,
+                  background: "rgba(198,40,40,0.07)",
+                  border: "1px solid rgba(198,40,40,0.22)",
+                  color: "#c62828", fontSize: 13, fontWeight: 600,
+                  cursor: "pointer", fontFamily: font,
+                }}
               >
-                <AlertTriangle className="w-4 h-4" />
+                <AlertTriangle style={{ width: 15, height: 15 }} />
                 Reject ECO
-              </Button>
+              </button>
             )}
           </div>
 
           {/* Reject input */}
           {showRejectInput && (
-            <div className="space-y-2 pt-1">
+            <div style={{ marginTop: 14 }}>
               <input
-                className="w-full border border-zinc-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-300"
                 placeholder="Reason for rejection..."
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
+                style={{
+                  width: "100%", height: 42, padding: "0 14px",
+                  background: "rgba(245,240,252,0.6)",
+                  border: "1px solid rgba(198,40,40,0.3)",
+                  borderRadius: 10, fontSize: 13, color: "#2d1a38",
+                  outline: "none", fontFamily: font, boxSizing: "border-box",
+                  marginBottom: 10,
+                }}
               />
-              <div className="flex gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
                   onClick={handleReject}
                   disabled={!rejectReason.trim() || actionLoading}
+                  style={{
+                    padding: "8px 18px", borderRadius: 9,
+                    background: "#c62828", color: "#fff",
+                    border: "none", cursor: "pointer",
+                    fontSize: 13, fontWeight: 600, fontFamily: font,
+                    opacity: (!rejectReason.trim() || actionLoading) ? 0.5 : 1,
+                  }}
                 >
                   Confirm Reject
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                </button>
+                <button
                   onClick={() => { setShowRejectInput(false); setRejectReason("") }}
+                  style={{
+                    padding: "8px 18px", borderRadius: 9,
+                    background: "transparent", color: "#9b6aab",
+                    border: "1px solid rgba(190,113,209,0.3)",
+                    cursor: "pointer", fontSize: 13, fontFamily: font,
+                  }}
                 >
                   Cancel
-                </Button>
+                </button>
               </div>
             </div>
           )}
 
-          {/* Ripple ack warning */}
           {eco.ripple.affectedBOMIds.length > 0 && !rippleAck && canApprove && (
-            <p className="text-xs text-orange-600">
+            <p style={{ fontSize: 12, color: "#e07b00", marginTop: 10 }}>
               ⚠ Acknowledge the ripple impact above before approving
             </p>
           )}
         </div>
       )}
 
-      {/* Terminal state badge */}
+      {/* ── Terminal State ── */}
       {isTerminal && (
-        <div className={`rounded-xl p-4 text-center font-semibold text-sm ${
-          eco.stage === "Done"
-            ? "bg-green-50 border border-green-200 text-green-700"
-            : "bg-red-50 border border-red-200 text-red-700"
-        }`}>
+        <div style={{
+          borderRadius: 14, padding: "16px 24px", textAlign: "center",
+          fontWeight: 700, fontSize: 14,
+          background: eco.stage === "Done" ? "rgba(46,125,50,0.06)" : "rgba(198,40,40,0.06)",
+          border: `1px solid ${eco.stage === "Done" ? "rgba(46,125,50,0.2)" : "rgba(198,40,40,0.2)"}`,
+          color: eco.stage === "Done" ? "#2e7d32" : "#c62828",
+        }}>
           {eco.stage === "Done" ? "✓ ECO Applied Successfully" : "✗ ECO Rejected"}
         </div>
       )}

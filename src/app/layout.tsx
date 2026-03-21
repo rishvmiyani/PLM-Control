@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+<<<<<<< HEAD
 import { DM_Sans } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
@@ -10,10 +11,13 @@ const dmSans = DM_Sans({
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-dm-sans"
 })
+=======
+import "./globals.css"
+>>>>>>> beed07c (add new files and updates)
 
 export const metadata: Metadata = {
   title: "PLM Intelligence Platform",
-  description: "Enterprise Product Lifecycle Management",
+  description: "Engineering Change Order Management",
 }
 
 export default function RootLayout({
@@ -23,6 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+<<<<<<< HEAD
       <body className={`${dmSans.variable} font-['DM_Sans'] bg-gradient-to-br from-slate-50 via-white to-[#e6c6ed]/20`}>
         <SessionProvider>
           <TooltipProvider>
@@ -30,6 +35,10 @@ export default function RootLayout({
           </TooltipProvider>
         </SessionProvider>
         <Toaster richColors position="top-right" />
+=======
+      <body>
+        {children}
+>>>>>>> beed07c (add new files and updates)
       </body>
     </html>
   )

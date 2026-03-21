@@ -1,63 +1,58 @@
 import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { z } from "zod"
+import Credentials from "next-auth/providers/credentials"
+import { prisma } from "@/lib/prisma"
+import { compare } from "bcryptjs"
 
-const loginSchema = z.object({
-  loginId: z.string().min(1),
-  password: z.string().min(1),
-})
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [
-    CredentialsProvider({
-      name: "credentials",
+    Credentials({
       credentials: {
         loginId: { label: "Login ID", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const parsed = loginSchema.safeParse(credentials)
-        if (!parsed.success) return null
+        if (!credentials?.loginId || !credentials?.password) return null
 
-        const { loginId, password } = parsed.data
+        const user = await prisma.user.findUnique({
+          where: { loginId: credentials.loginId as string },
+          select: { id: true, loginId: true, email: true, password: true, role: true },
+        })
 
-        // Dynamic import keeps prisma OUT of edge runtime
-        const { prisma } = await import("@/lib/prisma")
-        const bcrypt = await import("bcryptjs")
-
-        const user = await prisma.user.findUnique({ where: { loginId } })
         if (!user) return null
 
-        const match = await bcrypt.compare(password, user.password)
-        if (!match) return null
+        const valid = await compare(credentials.password as string, user.password)
+        if (!valid) return null
 
         return {
           id: user.id,
+          loginId: user.loginId,
           email: user.email,
-          name: user.loginId,
           role: user.role,
         }
       },
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.role = (user as { role: string }).role
-        token.loginId = user.name
+        token.loginId = (user as any).loginId
+        token.role = (user as any).role
       }
       return token
     },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string
-        session.user.role = token.role as string
-        session.user.loginId = token.loginId as string
-      }
+    session({ session, token }) {
+      session.user.id = token.id as string
+      session.user.loginId = token.loginId as string
+      session.user.role = token.role as string
       return session
     },
+  },
+  session: {
+    strategy: "jwt",        // ← JWT is faster than database sessions
+    maxAge: 24 * 60 * 60,   // 24 hours
+  },
+  pages: {
+    signIn: "/login",
   },
 })

@@ -1,7 +1,5 @@
 import NextAuth from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
 import { z } from "zod"
 
 const loginSchema = z.object({
@@ -11,9 +9,7 @@ const loginSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
+  pages: { signIn: "/login" },
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -27,13 +23,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const { loginId, password } = parsed.data
 
-        const user = await prisma.user.findUnique({
-          where: { loginId },
-        })
+        // Dynamic import keeps prisma OUT of edge runtime
+        const { prisma } = await import("@/lib/prisma")
+        const bcrypt = await import("bcryptjs")
+
+        const user = await prisma.user.findUnique({ where: { loginId } })
         if (!user) return null
 
-        const passwordMatch = await bcrypt.compare(password, user.password)
-        if (!passwordMatch) return null
+        const match = await bcrypt.compare(password, user.password)
+        if (!match) return null
 
         return {
           id: user.id,

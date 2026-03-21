@@ -277,3 +277,14 @@ glass-badge: bg-white/80 backdrop-blur-xl border-white/50 shadow-xl
     @apply border-[#8b3b9e]/70 bg-gradient-to-br from-[#8b3b9e]/10 to-[#be71d1]/10 shadow-purple-500/25;
   }
 }
+.breadcrumb a {
+  color:#be71d1;
+  text-decoration:none;        /* ensure no underline */
+  font-weight:500;
+  cursor:pointer;
+}
+.breadcrumb a:hover {
+  color:#8b3b9e;
+  text-decoration:none;        /* re-enforce on hover */
+}
+

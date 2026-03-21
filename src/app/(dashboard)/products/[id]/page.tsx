@@ -1,162 +1,119 @@
 import { auth } from "@/lib/auth"
-import { redirect, notFound } from "next/navigation"
+import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { VersionTimeline } from "@/components/timeline/VersionTimeline"
 import Link from "next/link"
-import { ArrowLeft, Plus } from "lucide-react"
+import { Plus, Package } from "lucide-react"
+import ProductsList from "@/components/products/ProductsList"
 
-export default async function ProductDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export const dynamic = "force-dynamic"
+
+export default async function ProductsPage() {
   const session = await auth()
-  if (!session) redirect("/login")
+  if (!session?.user) redirect("/login")
 
-  const { id } = await params
-
-  const product = await prisma.product.findUnique({
-    where: { id },
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
     include: {
-      boms: { orderBy: { version: "desc" } },
-      ecos: {
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        include: { user: { select: { loginId: true } } },
-      },
+      _count: { select: { boms: true, ecos: true } },
     },
   })
 
-  if (!product) notFound()
+  const canCreate = ["ADMIN", "ENGINEERING"].includes(session.user.role)
+  const font      = "'DM Sans', sans-serif"
 
-  const allVersions = await prisma.product.findMany({
-    where: { name: product.name },
-    orderBy: { version: "desc" },
-    select: {
-      id: true,
-      version: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  })
-
-  const canCreateECO = ["ADMIN", "ENGINEERING"].includes(session.user.role)
-  const isActive = product.status === "ACTIVE"
+  const serialized = products.map((p) => ({
+    id:        p.id,
+    name:      p.name,
+    version:   p.version,
+    status:    p.status,
+    salePrice: p.salePrice,
+    costPrice: p.costPrice,
+    bomCount:  p._count.boms,
+    ecoCount:  p._count.ecos,
+  }))
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div style={{ fontFamily: font, maxWidth: 900, padding: "0 4px" }}>
+
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/products">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-2xl font-bold text-zinc-900">
-                {product.name}
-              </h1>
-              <Badge variant="outline">v{product.version}</Badge>
-              <Badge variant={isActive ? "default" : "secondary"}>
-                {product.status}
-              </Badge>
-            </div>
-            <p className="text-zinc-400 text-xs mt-1">ID: {product.id}</p>
-          </div>
+      <div style={{
+        display: "flex", alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 24, flexWrap: "wrap", gap: 14,
+      }}>
+        <div>
+          <h1 style={{
+            fontSize: "clamp(1.4rem,4vw,1.8rem)",
+            fontWeight: 800, margin: 0,
+            background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}>
+            Products
+          </h1>
+          <p style={{ fontSize: 13, color: "#9b6aab", margin: "4px 0 0", fontWeight: 500 }}>
+            {products.length} product{products.length !== 1 ? "s" : ""} total
+          </p>
         </div>
-        {canCreateECO && isActive && (
-          <Link href={`/eco/new?productId=${product.id}&type=PRODUCT`}>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Create ECO
-            </Button>
+
+        {canCreate && (
+          <Link href="/products/new" style={{ textDecoration: "none" }}>
+            <button style={{
+              display: "inline-flex", alignItems: "center", gap: 7,
+              padding: "10px 20px", borderRadius: 11, border: "none",
+              background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+              color: "#fff", fontSize: 13, fontWeight: 700,
+              fontFamily: font, cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(139,59,158,0.28)",
+            }}>
+              <Plus style={{ width: 14, height: 14 }} />
+              New Product
+            </button>
           </Link>
         )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-zinc-200 p-5">
-          <p className="text-sm text-zinc-500">Sale Price</p>
-          <p className="text-2xl font-bold text-zinc-900 mt-1">
-            ₹{product.salePrice.toLocaleString()}
+      {/* Empty State */}
+      {products.length === 0 ? (
+        <div style={{
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(190,113,209,0.14)",
+          borderRadius: 18, padding: "60px 24px",
+          textAlign: "center",
+          boxShadow: "0 4px 24px rgba(139,59,158,0.07)",
+        }}>
+          <div style={{
+            width: 56, height: 56, borderRadius: 16,
+            background: "rgba(139,59,158,0.08)",
+            display: "flex", alignItems: "center",
+            justifyContent: "center", margin: "0 auto 16px",
+          }}>
+            <Package style={{ width: 26, height: 26, color: "#be71d1" }} />
+          </div>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#4a2d5a", margin: "0 0 6px" }}>
+            No products yet
           </p>
-        </div>
-        <div className="bg-white rounded-xl border border-zinc-200 p-5">
-          <p className="text-sm text-zinc-500">Cost Price</p>
-          <p className="text-2xl font-bold text-zinc-900 mt-1">
-            ₹{product.costPrice.toLocaleString()}
+          <p style={{ fontSize: 13, color: "#b0a0bc", margin: "0 0 20px" }}>
+            Create your first product to get started
           </p>
-        </div>
-        <div className="bg-white rounded-xl border border-zinc-200 p-5">
-          <p className="text-sm text-zinc-500">Margin</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">
-            {product.salePrice > 0
-              ? (((product.salePrice - product.costPrice) / product.salePrice) * 100).toFixed(1)
-              : "0.0"}%
-          </p>
-        </div>
-      </div>
-
-      {/* BOMs */}
-      <div className="bg-white rounded-xl border border-zinc-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-zinc-800">Bill of Materials</h2>
-          {canCreateECO && isActive && (
-            <Link href={`/bom/new?productId=${product.id}`}>
-              <Button variant="outline" size="sm">
-                <Plus className="w-3 h-3 mr-1" />
-                New BOM
-              </Button>
+          {canCreate && (
+            <Link href="/products/new" style={{ textDecoration: "none" }}>
+              <button style={{
+                padding: "10px 24px", borderRadius: 10, border: "none",
+                background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+                color: "#fff", fontSize: 13, fontWeight: 700,
+                fontFamily: font, cursor: "pointer",
+                boxShadow: "0 4px 14px rgba(139,59,158,0.25)",
+              }}>
+                Create Product
+              </button>
             </Link>
           )}
         </div>
-        {product.boms.length === 0 ? (
-          <p className="text-sm text-zinc-400">No BOMs created yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {product.boms.map((bom) => (
-              <Link
-                key={bom.id}
-                href={`/bom/${bom.id}`}
-                className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 hover:bg-zinc-50 transition-colors"
-              >
-                <span className="text-sm font-medium">BOM v{bom.version}</span>
-                <Badge variant={bom.status === "ACTIVE" ? "default" : "secondary"}>
-                  {bom.status}
-                </Badge>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      ) : (
+        <ProductsList products={serialized} />
+      )}
 
-      <Separator />
-
-      {/* Version Timeline */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-zinc-800">Version History</h2>
-          <Link href={`/products/${product.id}/timeline`}>
-            <Button variant="ghost" size="sm">View Full Timeline</Button>
-          </Link>
-        </div>
-        <VersionTimeline
-          items={allVersions.map((v) => ({
-            ...v,
-            status: String(v.status),
-            createdAt: v.createdAt.toISOString(),
-            updatedAt: v.updatedAt.toISOString(),
-          }))}
-          type="product"
-        />
-      </div>
     </div>
   )
 }

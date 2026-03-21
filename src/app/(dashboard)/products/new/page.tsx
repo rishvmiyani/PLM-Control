@@ -1,111 +1,59 @@
-"use client"
-
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-import { useRouter } from "next/navigation"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { auth } from "@/lib/auth"
+import { redirect } from "next/navigation"
+import NewProductForm from "@/components/products/NewProductForm"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
-const schema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
-  salePrice: z.coerce.number().positive("Must be positive"),
-  costPrice: z.coerce.number().positive("Must be positive"),
-})
+export const dynamic = "force-dynamic"
 
-type FormValues = z.infer<typeof schema>
+export default async function NewProductPage() {
+  const session = await auth()
+  if (!session?.user) redirect("/login")
 
-export default function NewProductPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-
-  const { register, handleSubmit, formState: { errors } } =
-    useForm<FormValues>({ resolver: zodResolver(schema) })
-
-  async function onSubmit(data: FormValues) {
-    setIsLoading(true)
-    try {
-      const res = await fetch("/api/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) throw new Error("Failed")
-      const product = await res.json()
-      toast.success("Product created successfully")
-      router.push(`/products/${product.id}`)
-    } catch {
-      toast.error("Failed to create product")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const font = "'DM Sans', sans-serif"
 
   return (
-    <div className="max-w-xl space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/products">
-          <Button variant="ghost" size="icon">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-900">New Product</h1>
-          <p className="text-zinc-500 text-sm">Version 1 is auto-assigned</p>
+    <div style={{ fontFamily: font, maxWidth: 680, padding: "0 4px" }}>
+
+      {/* Back */}
+      <Link href="/products" style={{ textDecoration: "none" }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          marginBottom: 20, color: "#8b3b9e", fontSize: 13, fontWeight: 600,
+          cursor: "pointer",
+        }}>
+          <ArrowLeft style={{ width: 14, height: 14 }} />
+          Back to Products
         </div>
+      </Link>
+
+      {/* Header */}
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{
+          fontSize: "1.5rem", fontWeight: 800,
+          margin: 0, lineHeight: 1.2,
+          background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+        }}>
+          New Product
+        </h1>
+        <p style={{ fontSize: 13, color: "#9b6aab", margin: "5px 0 0", fontWeight: 500 }}>
+          Version 1 is auto-assigned
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Details</CardTitle>
-          <CardDescription>
-            Products cannot be edited after creation. Use ECOs to make changes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="name">Product Name</Label>
-              <Input id="name" placeholder="e.g. Steel Frame Assembly" {...register("name")} />
-              {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
-            </div>
+      {/* Card */}
+      <div style={{
+        background: "rgba(255,255,255,0.92)",
+        border: "1px solid rgba(190,113,209,0.14)",
+        borderRadius: 18,
+        padding: "28px 24px 24px",
+        boxShadow: "0 4px 24px rgba(139,59,158,0.08)",
+      }}>
+        <NewProductForm />
+      </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="salePrice">Sale Price (₹)</Label>
-                <Input id="salePrice" type="number" step="0.01" placeholder="0.00" {...register("salePrice")} />
-                {errors.salePrice && <p className="text-sm text-red-500">{errors.salePrice.message}</p>}
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="costPrice">Cost Price (₹)</Label>
-                <Input id="costPrice" type="number" step="0.01" placeholder="0.00" {...register("costPrice")} />
-                {errors.costPrice && <p className="text-sm text-red-500">{errors.costPrice.message}</p>}
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <Label>Version</Label>
-              <Input value="1" disabled className="bg-zinc-50 text-zinc-400" />
-              <p className="text-xs text-zinc-400">Auto-assigned. Increments via ECO.</p>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={isLoading} className="flex-1">
-                {isLoading ? "Creating..." : "Create Product"}
-              </Button>
-              <Link href="/products">
-                <Button variant="outline" type="button">Cancel</Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
     </div>
   )
 }

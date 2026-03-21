@@ -1,18 +1,14 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Plus, GitPullRequest, Clock, AlertTriangle } from "lucide-react"
-import { format } from "date-fns"
+import { differenceInHours } from "date-fns"
+import {
+  GitPullRequest, CheckCircle2,
+  AlertTriangle, Plus, Clock,
+} from "lucide-react"
+import ECOTable from "@/components/dashboard/ECOTable"
 
-const STAGE_COLORS: Record<string, string> = {
-  "New": "bg-[#e6c6ed]/60 backdrop-blur-sm text-[#8b3b9e]",
-  "Engineering Review": "bg-[#be71d1]/50 backdrop-blur-sm text-[#8b3b9e]",
-  "Approval": "bg-[#8b3b9e]/30 backdrop-blur-sm text-[#8b3b9e]",
-  "Done": "bg-[#be71d1]/70 backdrop-blur-sm text-[#8b3b9e]",
-  "Rejected": "bg-[#e6c6ed]/50 backdrop-blur-sm text-[#8b3b9e]",
-}
+const SLA_HOURS = 5
 
 export default async function EngineeringDashboard() {
   const session = await auth()
@@ -24,118 +20,186 @@ export default async function EngineeringDashboard() {
     take: 10,
     include: {
       product: { select: { name: true, version: true } },
+      user:    { select: { loginId: true } },
     },
   })
 
-  const openCount = myECOs.filter((e) => e.stage !== "Done" && e.stage !== "Rejected").length
-  const conflictCount = myECOs.filter((e) => e.conflictStatus === "CONFLICT").length
+  const openCount = myECOs.filter(
+    (e) => e.stage !== "Done" && e.stage !== "Rejected"
+  ).length
+
   const doneCount = myECOs.filter((e) => e.stage === "Done").length
 
+  const breachedCount = myECOs.filter((e) => {
+    if (e.stage === "Done" || e.stage === "Rejected") return false
+    return differenceInHours(new Date(), e.enteredStageAt) >= SLA_HOURS
+  }).length
+
+  const font = "'DM Sans', sans-serif"
+
+  const serializedECOs = myECOs.map((e) => ({
+    id:             e.id,
+    title:          e.title,
+    stage:          e.stage,
+    riskLevel:      e.riskLevel,
+    riskScore:      e.riskScore,
+    conflictStatus: e.conflictStatus,
+    createdAt:      e.createdAt.toISOString(),
+    enteredStageAt: e.enteredStageAt.toISOString(),
+    product: {
+      name:    e.product.name,
+      version: e.product.version,
+    },
+  }))
+
   return (
-    <div className="font-['DM_Sans'] space-y-8 p-6 lg:p-12">
-      {/* Header */}
-      <div className="glass-header flex items-center justify-between">
+    <div style={{ fontFamily: font, maxWidth: 900, padding: "0 4px" }}>
+
+      {/* ── Header ── */}
+      <div style={{
+        display: "flex", alignItems: "flex-start",
+        justifyContent: "space-between",
+        marginBottom: 20, flexWrap: "wrap", gap: 14,
+      }}>
         <div>
-          <h1 className="text-4xl lg:text-5xl font-black bg-gradient-to-r from-[#8b3b9e] via-[#be71d1] to-[#e6c6ed] bg-clip-text text-transparent drop-shadow-2xl">
+          <h1 style={{
+            fontSize: "clamp(1.5rem,4vw,2rem)",
+            fontWeight: 800, margin: 0, lineHeight: 1.2,
+            background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}>
             Welcome, {session.user.loginId}
           </h1>
-          <p className="text-[#8b3b9e]/80 text-xl mt-3 font-semibold tracking-wide">Engineering Dashboard</p>
+          <p style={{ color: "#9b6aab", fontSize: 13, margin: "4px 0 0", fontWeight: 600 }}>
+            Engineering Dashboard
+          </p>
         </div>
-        <Link href="/eco/new">
-          <Button className="glass-button px-8 py-6 text-lg font-bold shadow-2xl hover:shadow-3xl hover:-translate-y-1 gap-3 backdrop-blur-xl border-2">
-            <Plus className="w-5 h-5" /> New ECO
-          </Button>
+        <Link href="/eco/new" style={{ textDecoration: "none" }}>
+          <button style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "10px 20px", borderRadius: 11, border: "none",
+            background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+            color: "#fff", fontSize: 13, fontWeight: 700,
+            fontFamily: font, cursor: "pointer",
+            boxShadow: "0 4px 16px rgba(139,59,158,0.28)",
+          }}>
+            <Plus style={{ width: 14, height: 14 }} /> New ECO
+          </button>
         </Link>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="glass-stat-card p-10 text-center group hover:shadow-4xl hover:-translate-y-3 transition-all duration-500">
-          <div className="glass-icon-circle w-24 h-24 mx-auto mb-8 flex items-center justify-center backdrop-blur-2xl shadow-2xl bg-gradient-to-br from-[#8b3b9e]/20 to-[#be71d1]/20">
-            <GitPullRequest className="w-12 h-12 text-[#8b3b9e]" />
+      {/* ── SLA Breach Alert ── */}
+      {breachedCount > 0 && (
+        <div style={{
+          display: "flex", alignItems: "flex-start", gap: 10,
+          background: "rgba(224,123,0,0.07)",
+          border: "1px solid rgba(224,123,0,0.25)",
+          borderRadius: 12, padding: "12px 16px",
+          marginBottom: 20,
+        }}>
+          <AlertTriangle style={{
+            width: 16, height: 16, color: "#e07b00",
+            flexShrink: 0, marginTop: 1,
+          }} />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#b85c00", margin: 0 }}>
+              {breachedCount} ECO{breachedCount > 1 ? "s" : ""} have breached SLA
+            </p>
+            <p style={{ fontSize: 11, color: "#c97a20", margin: "2px 0 0" }}>
+              These ECOs have exceeded the {SLA_HOURS}-hour approval window.
+            </p>
           </div>
-          <p className="text-5xl font-black text-[#1f1f1f] group-hover:text-[#8b3b9e] transition-colors drop-shadow-lg">
+        </div>
+      )}
+
+      {/* ── Stats ── */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3,1fr)",
+        gap: 14, marginBottom: 24,
+      }}>
+
+        {/* Open ECOs */}
+        <div style={{
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(190,113,209,0.18)",
+          borderRadius: 16, padding: "20px 16px",
+          boxShadow: "0 4px 18px rgba(139,59,158,0.07)",
+          textAlign: "center",
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, margin: "0 auto 12px",
+            background: "rgba(139,59,158,0.09)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <Clock style={{ width: 20, height: 20, color: "#8b3b9e" }} />
+          </div>
+          <p style={{ fontSize: 30, fontWeight: 800, color: "#2d1a38", margin: 0, lineHeight: 1 }}>
             {openCount}
           </p>
-          <p className="text-xl text-[#8b3b9e]/70 font-semibold mt-4 tracking-wide">Open ECOs</p>
-        </div>
-
-        <div className={`glass-stat-card p-10 text-center group hover:shadow-4xl hover:-translate-y-3 transition-all duration-500 ring-4 ring-[#8b3b9e]/20 bg-gradient-to-br from-[#8b3b9e]/10 to-[#be71d1]/10 border-[#8b3b9e]/40 shadow-3xl`}>
-          <div className="glass-icon-circle w-24 h-24 mx-auto mb-8 flex items-center justify-center backdrop-blur-2xl shadow-2xl bg-gradient-to-br from-[#8b3b9e]/30 to-[#be71d1]/30">
-            <AlertTriangle className="w-12 h-12 text-[#8b3b9e]" />
-          </div>
-          <p className="text-5xl font-black text-[#1f1f1f] group-hover:text-[#8b3b9e] transition-colors drop-shadow-lg">
-            {conflictCount}
+          <p style={{ fontSize: 11, color: "#9b6aab", margin: "5px 0 0", fontWeight: 600 }}>
+            Open ECOs
           </p>
-          <p className="text-xl text-[#8b3b9e]/70 font-semibold mt-4 tracking-wide">Conflicts</p>
         </div>
 
-        <div className="glass-stat-card p-10 text-center group hover:shadow-4xl hover:-translate-y-3 transition-all duration-500">
-          <div className="glass-icon-circle w-24 h-24 mx-auto mb-8 flex items-center justify-center backdrop-blur-2xl shadow-2xl bg-gradient-to-br from-[#be71d1]/30 to-[#e6c6ed]/30">
-            <Clock className="w-12 h-12 text-[#be71d1]" />
+        {/* SLA Breached */}
+        <div style={{
+          background: breachedCount > 0
+            ? "rgba(224,123,0,0.06)" : "rgba(255,255,255,0.92)",
+          border: breachedCount > 0
+            ? "1px solid rgba(224,123,0,0.28)"
+            : "1px solid rgba(190,113,209,0.18)",
+          borderRadius: 16, padding: "20px 16px",
+          boxShadow: "0 4px 18px rgba(139,59,158,0.07)",
+          textAlign: "center",
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, margin: "0 auto 12px",
+            background: "rgba(224,123,0,0.10)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <AlertTriangle style={{ width: 20, height: 20, color: "#e07b00" }} />
           </div>
-          <p className="text-5xl font-black text-[#1f1f1f] group-hover:text-[#8b3b9e] transition-colors drop-shadow-lg">
+          <p style={{
+            fontSize: 30, fontWeight: 800, margin: 0, lineHeight: 1,
+            color: breachedCount > 0 ? "#e07b00" : "#2d1a38",
+          }}>
+            {breachedCount}
+          </p>
+          <p style={{ fontSize: 11, color: "#9b6aab", margin: "5px 0 0", fontWeight: 600 }}>
+            SLA Breached
+          </p>
+        </div>
+
+        {/* Total Approved */}
+        <div style={{
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(190,113,209,0.18)",
+          borderRadius: 16, padding: "20px 16px",
+          boxShadow: "0 4px 18px rgba(139,59,158,0.07)",
+          textAlign: "center",
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 12, margin: "0 auto 12px",
+            background: "rgba(39,174,96,0.09)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <CheckCircle2 style={{ width: 20, height: 20, color: "#27ae60" }} />
+          </div>
+          <p style={{ fontSize: 30, fontWeight: 800, color: "#2d1a38", margin: 0, lineHeight: 1 }}>
             {doneCount}
           </p>
-          <p className="text-xl text-[#8b3b9e]/70 font-semibold mt-4 tracking-wide">Completed</p>
+          <p style={{ fontSize: 11, color: "#9b6aab", margin: "5px 0 0", fontWeight: 600 }}>
+            Total Approved
+          </p>
         </div>
+
       </div>
 
-      {/* My ECOs Mini Kanban */}
-      <div className="glass-card max-w-4xl">
-        <div className="px-10 py-8 border-b border-white/40 backdrop-blur-xl">
-          <h2 className="text-4xl font-black text-[#8b3b9e] tracking-tight drop-shadow-xl">
-            My ECOs
-          </h2>
-        </div>
-        
-        {myECOs.length === 0 ? (
-          <div className="glass-empty-state text-center py-20 px-12">
-            <p className="text-3xl font-bold text-[#8b3b9e]/60 tracking-wide mb-6">No ECOs yet</p>
-            <Link href="/eco/new">
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="glass-button-outline px-12 py-6 text-lg font-bold tracking-wide shadow-xl border-2 hover:shadow-2xl"
-              >
-                Create your first ECO
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="p-10 space-y-4">
-            {myECOs.map((eco) => (
-              <Link key={eco.id} href={`/eco/${eco.id}`}>
-                <div className="glass-eco-card p-8 rounded-3xl hover:shadow-4xl hover:-translate-y-2 transition-all duration-500 group cursor-pointer border border-white/60 hover:border-[#8b3b9e]/40">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <p className="text-xl font-bold text-[#1f1f1f] group-hover:text-[#8b3b9e] transition-colors drop-shadow-lg line-clamp-1">
-                        {eco.title}
-                      </p>
-                      <p className="text-lg text-[#8b3b9e]/80 mt-2 font-semibold tracking-wide">
-                        {eco.product.name} v{eco.product.version} · {format(new Date(eco.createdAt), "dd MMM yyyy")}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 shrink-0 ml-6">
-                      {eco.conflictStatus === "CONFLICT" && (
-                        <Badge 
-                          variant="destructive" 
-                          className="glass-conflict-badge px-6 py-3 font-bold text-base shadow-xl backdrop-blur-xl border-2"
-                        >
-                          Conflict
-                        </Badge>
-                      )}
-                      <span className={`glass-stage-badge px-6 py-3 rounded-2xl font-bold text-lg shadow-xl transform hover:scale-105 transition-all duration-200 ${STAGE_COLORS[eco.stage] ?? "bg-[#e6c6ed]/60 backdrop-blur-sm text-[#8b3b9e]"}`}>
-                        {eco.stage}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* ── ECO Table (Client Component) ── */}
+      <ECOTable ecos={serializedECOs} slaHours={SLA_HOURS} />
+
     </div>
   )
 }

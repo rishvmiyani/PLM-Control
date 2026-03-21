@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { format, differenceInHours } from "date-fns"
-import { GitPullRequest, Clock, ChevronRight, Plus } from "lucide-react"
+import { GitPullRequest, Clock, ChevronRight, Plus, Pencil } from "lucide-react"
 
 const STAGE_COLORS: Record<string, { bg: string; color: string; dot: string }> = {
   "New":                { bg: "rgba(139,59,158,0.08)",  color: "#8b3b9e", dot: "#8b3b9e" },
@@ -18,6 +18,9 @@ const RISK_COLORS: Record<string, { bg: string; color: string }> = {
   HIGH:     { bg: "rgba(224,123,0,0.10)",  color: "#e07b00" },
   CRITICAL: { bg: "rgba(198,40,40,0.10)",  color: "#c62828" },
 }
+
+// Stages where Engineering can still edit
+const EDITABLE_STAGES = ["New", "Engineering Review"]
 
 interface ECORow {
   id:             string
@@ -38,26 +41,26 @@ export default function ECOTable({
   ecos,
   slaHours,
 }: {
-  ecos: ECORow[]
+  ecos:     ECORow[]
   slaHours: number
 }) {
   const font = "'DM Sans', sans-serif"
 
   return (
     <div style={{
-      background: "rgba(255,255,255,0.92)",
-      border: "1px solid rgba(190,113,209,0.14)",
+      background:   "rgba(255,255,255,0.92)",
+      border:       "1px solid rgba(190,113,209,0.14)",
       borderRadius: 18,
-      boxShadow: "0 4px 24px rgba(139,59,158,0.08)",
-      overflow: "hidden",
-      fontFamily: font,
+      boxShadow:    "0 4px 24px rgba(139,59,158,0.08)",
+      overflow:     "hidden",
+      fontFamily:   font,
     }}>
 
       {/* Card header */}
       <div style={{
-        padding: "16px 20px",
+        padding:      "16px 20px",
         borderBottom: "1px solid rgba(190,113,209,0.12)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
+        display:      "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <h2 style={{ fontSize: 15, fontWeight: 800, color: "#2d1a38", margin: 0 }}>
           My ECOs
@@ -106,12 +109,12 @@ export default function ECOTable({
           {/* Column labels */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "1fr 130px 90px 110px 110px",
-            padding: "8px 20px",
-            background: "rgba(245,240,252,0.5)",
+            gridTemplateColumns: "1fr 130px 90px 110px 110px 60px",
+            padding:      "8px 20px",
+            background:   "rgba(245,240,252,0.5)",
             borderBottom: "1px solid rgba(190,113,209,0.10)",
           }}>
-            {["TITLE", "PRODUCT", "RISK", "SLA", "STAGE"].map((col) => (
+            {["TITLE", "PRODUCT", "RISK", "SLA", "STAGE", ""].map((col) => (
               <span key={col} style={{
                 fontSize: 10, fontWeight: 800,
                 color: "#9b6aab", letterSpacing: "0.06em",
@@ -123,111 +126,156 @@ export default function ECOTable({
 
           {/* Rows */}
           {ecos.map((eco, i) => {
-            const stageStyle = STAGE_COLORS[eco.stage] ?? STAGE_COLORS["New"]
-            const riskStyle  = RISK_COLORS[eco.riskLevel] ?? RISK_COLORS["MEDIUM"]
-            const isDone     = eco.stage === "Done" || eco.stage === "Rejected"
+            const stageStyle   = STAGE_COLORS[eco.stage] ?? STAGE_COLORS["New"]
+            const riskStyle    = RISK_COLORS[eco.riskLevel] ?? RISK_COLORS["MEDIUM"]
+            const isDone       = eco.stage === "Done" || eco.stage === "Rejected"
             const hoursElapsed = differenceInHours(new Date(), new Date(eco.enteredStageAt))
             const hoursLeft    = Math.max(0, slaHours - hoursElapsed)
             const isBreached   = hoursElapsed >= slaHours
+            const canEdit      = EDITABLE_STAGES.includes(eco.stage)
 
             return (
-              <Link key={eco.id} href={`/eco/${eco.id}`} style={{ textDecoration: "none" }}>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 130px 90px 110px 110px",
-                    padding: "13px 20px",
-                    alignItems: "center",
-                    borderBottom: i < ecos.length - 1
-                      ? "1px solid rgba(190,113,209,0.07)" : "none",
-                    cursor: "pointer",
-                    transition: "background 0.15s",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "rgba(139,59,158,0.03)")}
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")}
-                >
-                  {/* Title */}
-                  <div style={{ minWidth: 0, paddingRight: 12 }}>
-                    <p style={{
-                      fontSize: 12, fontWeight: 700, color: "#2d1a38",
-                      margin: 0, overflow: "hidden",
-                      textOverflow: "ellipsis", whiteSpace: "nowrap",
-                    }}>
-                      {eco.title}
-                    </p>
-                    <p style={{ fontSize: 10, color: "#b0a0bc", margin: "2px 0 0" }}>
-                      {format(new Date(eco.createdAt), "dd MMM yyyy")}
-                    </p>
-                  </div>
+              <div
+                key={eco.id}
+                style={{
+                  display:      "grid",
+                  gridTemplateColumns: "1fr 130px 90px 110px 110px 60px",
+                  padding:      "13px 20px",
+                  alignItems:   "center",
+                  borderBottom: i < ecos.length - 1
+                    ? "1px solid rgba(190,113,209,0.07)" : "none",
+                  transition:   "background 0.15s",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "rgba(139,59,158,0.03)")}
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")}
+              >
+                {/* Title — clickable to detail */}
+                <Link href={`/eco/${eco.id}`} style={{ textDecoration: "none", minWidth: 0, paddingRight: 12 }}>
+                  <p style={{
+                    fontSize: 12, fontWeight: 700, color: "#2d1a38",
+                    margin: 0, overflow: "hidden",
+                    textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {eco.title}
+                  </p>
+                  <p style={{ fontSize: 10, color: "#b0a0bc", margin: "2px 0 0" }}>
+                    {format(new Date(eco.createdAt), "dd MMM yyyy")}
+                  </p>
+                </Link>
 
-                  {/* Product */}
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#4a2d5a", margin: 0 }}>
-                      {eco.product.name}
-                    </p>
-                    <p style={{ fontSize: 10, color: "#b0a0bc", margin: "1px 0 0" }}>
-                      v{eco.product.version}
-                    </p>
-                  </div>
+                {/* Product */}
+                <div>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#4a2d5a", margin: 0 }}>
+                    {eco.product.name}
+                  </p>
+                  <p style={{ fontSize: 10, color: "#b0a0bc", margin: "1px 0 0" }}>
+                    v{eco.product.version}
+                  </p>
+                </div>
 
-                  {/* Risk */}
-                  <div>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 4,
-                      padding: "3px 9px", borderRadius: 6,
-                      background: riskStyle.bg, color: riskStyle.color,
-                      fontSize: 10, fontWeight: 800, letterSpacing: "0.04em",
-                    }}>
-                      {eco.riskLevel}
-                      {eco.riskScore > 0 && (
-                        <span style={{ fontSize: 9, opacity: 0.7 }}>
-                          {eco.riskScore}
-                        </span>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* SLA */}
-                  <div>
-                    {isDone ? (
-                      <span style={{ fontSize: 10, color: "#27ae60", fontWeight: 600 }}>
-                        Completed
-                      </span>
-                    ) : (
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        padding: "3px 9px", borderRadius: 6,
-                        background: isBreached
-                          ? "rgba(198,40,40,0.08)" : "rgba(39,174,96,0.08)",
-                        color: isBreached ? "#c62828" : "#27ae60",
-                        fontSize: 10, fontWeight: 700,
-                      }}>
-                        <Clock style={{ width: 9, height: 9 }} />
-                        {isBreached ? "overdue" : `${hoursLeft}h left`}
+                {/* Risk */}
+                <div>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    padding: "3px 9px", borderRadius: 6,
+                    background: riskStyle.bg, color: riskStyle.color,
+                    fontSize: 10, fontWeight: 800, letterSpacing: "0.04em",
+                  }}>
+                    {eco.riskLevel}
+                    {eco.riskScore > 0 && (
+                      <span style={{ fontSize: 9, opacity: 0.7 }}>
+                        {eco.riskScore}
                       </span>
                     )}
-                  </div>
-
-                  {/* Stage */}
-                  <div>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 4,
-                      padding: "3px 9px", borderRadius: 6,
-                      background: stageStyle.bg, color: stageStyle.color,
-                      fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
-                    }}>
-                      <span style={{
-                        width: 5, height: 5, borderRadius: "50%",
-                        background: stageStyle.dot, flexShrink: 0,
-                      }} />
-                      {eco.stage}
-                    </span>
-                  </div>
-
+                  </span>
                 </div>
-              </Link>
+
+                {/* SLA */}
+                <div>
+                  {isDone ? (
+                    <span style={{ fontSize: 10, color: "#27ae60", fontWeight: 600 }}>
+                      Completed
+                    </span>
+                  ) : (
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      padding: "3px 9px", borderRadius: 6,
+                      background: isBreached
+                        ? "rgba(198,40,40,0.08)" : "rgba(39,174,96,0.08)",
+                      color: isBreached ? "#c62828" : "#27ae60",
+                      fontSize: 10, fontWeight: 700,
+                    }}>
+                      <Clock style={{ width: 9, height: 9 }} />
+                      {isBreached ? "overdue" : `${hoursLeft}h left`}
+                    </span>
+                  )}
+                </div>
+
+                {/* Stage */}
+                <div>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    padding: "3px 9px", borderRadius: 6,
+                    background: stageStyle.bg, color: stageStyle.color,
+                    fontSize: 10, fontWeight: 700, whiteSpace: "nowrap",
+                  }}>
+                    <span style={{
+                      width: 5, height: 5, borderRadius: "50%",
+                      background: stageStyle.dot, flexShrink: 0,
+                    }} />
+                    {eco.stage}
+                  </span>
+                </div>
+
+                {/* Edit button */}
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  {canEdit ? (
+                    <Link
+                      href={`/eco/${eco.id}/edit`}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ textDecoration: "none" }}
+                      title="Edit ECO"
+                    >
+                      <div style={{
+                        width: 30, height: 30, borderRadius: 8,
+                        background: "rgba(139,59,158,0.08)",
+                        border: "1px solid rgba(190,113,209,0.22)",
+                        display: "flex", alignItems: "center",
+                        justifyContent: "center", cursor: "pointer",
+                        transition: "all 0.14s",
+                      }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(139,59,158,0.16)"
+                          e.currentTarget.style.borderColor = "#8b3b9e"
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "rgba(139,59,158,0.08)"
+                          e.currentTarget.style.borderColor = "rgba(190,113,209,0.22)"
+                        }}
+                      >
+                        <Pencil style={{ width: 12, height: 12, color: "#8b3b9e" }} />
+                      </div>
+                    </Link>
+                  ) : (
+                    // Locked — cannot edit after Approval stage
+                    <div
+                      title={`Cannot edit — ECO is in ${eco.stage}`}
+                      style={{
+                        width: 30, height: 30, borderRadius: 8,
+                        background: "rgba(160,144,184,0.06)",
+                        border: "1px solid rgba(160,144,184,0.14)",
+                        display: "flex", alignItems: "center",
+                        justifyContent: "center", cursor: "not-allowed",
+                      }}
+                    >
+                      <Pencil style={{ width: 12, height: 12, color: "#c0b0d0" }} />
+                    </div>
+                  )}
+                </div>
+
+              </div>
             )
           })}
         </>

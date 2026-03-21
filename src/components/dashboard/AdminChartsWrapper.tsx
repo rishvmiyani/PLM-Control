@@ -10,11 +10,11 @@ import {
 import AdminChartsWrapper from "@/components/dashboard/AdminChartsWrapper"
 
 const STAGE_COLORS: Record<string, string> = {
-  "New": "bg-zinc-100 text-zinc-700",
-  "Engineering Review": "bg-blue-100 text-blue-700",
-  "Approval": "bg-yellow-100 text-yellow-700",
-  "Done": "bg-green-100 text-green-700",
-  "Rejected": "bg-red-100 text-red-700",
+  "New": "bg-[#e6c6ed]/50 text-[#8b3b9e]",
+  "Engineering Review": "bg-[#be71d1]/50 text-[#8b3b9e]",
+  "Approval": "bg-[#8b3b9e]/30 text-[#8b3b9e]",
+  "Done": "bg-[#be71d1]/70 text-[#8b3b9e]",
+  "Rejected": "bg-[#e6c6ed]/50 text-[#8b3b9e]",
 }
 
 export default async function AdminDashboard() {
@@ -54,13 +54,13 @@ export default async function AdminDashboard() {
   ])
 
   const stats = [
-    { icon: Package, label: "Active Products", value: totalProducts, color: "text-blue-500", href: "/products", highlight: false },
-    { icon: ListTree, label: "Active BOMs", value: totalBOMs, color: "text-purple-500", href: "/bom", highlight: false },
-    { icon: GitPullRequest, label: "Open ECOs", value: openECOs, color: "text-orange-500", href: "/eco", highlight: false },
-    { icon: CheckCircle, label: "Done ECOs", value: doneECOs, color: "text-green-500", href: "/eco", highlight: false },
-    { icon: AlertTriangle, label: "Conflicts", value: conflictECOs, color: "text-red-500", href: "/eco", highlight: conflictECOs > 0 },
-    { icon: AlertTriangle, label: "High Risk", value: highRiskECOs, color: "text-orange-500", href: "/eco", highlight: highRiskECOs > 0 },
-    { icon: Users, label: "Users", value: totalUsers, color: "text-zinc-400", href: "/settings/stages", highlight: false },
+    { icon: Package, label: "Active Products", value: totalProducts, color: "text-[#8b3b9e]", href: "/products", highlight: false },
+    { icon: ListTree, label: "Active BOMs", value: totalBOMs, color: "text-[#be71d1]", href: "/bom", highlight: false },
+    { icon: GitPullRequest, label: "Open ECOs", value: openECOs, color: "text-[#8b3b9e]", href: "/eco", highlight: false },
+    { icon: CheckCircle, label: "Done ECOs", value: doneECOs, color: "text-[#be71d1]", href: "/eco", highlight: false },
+    { icon: AlertTriangle, label: "Conflicts", value: conflictECOs, color: "text-[#e6c6ed]", href: "/eco", highlight: conflictECOs > 0 },
+    { icon: AlertTriangle, label: "High Risk", value: highRiskECOs, color: "text-[#8b3b9e]", href: "/eco", highlight: highRiskECOs > 0 },
+    { icon: Users, label: "Users", value: totalUsers, color: "text-[#be71d1]", href: "/settings/stages", highlight: false },
   ]
 
   const chartData = {
@@ -73,31 +73,42 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="font-['DM_Sans'] space-y-8 p-4 md:p-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Admin Dashboard</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">
+      <div className="glass-header">
+        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#8b3b9e] to-[#be71d1] bg-clip-text text-transparent drop-shadow-lg">
+          Admin Dashboard
+        </h1>
+        <p className="text-[#8b3b9e]/80 text-sm md:text-base mt-1 font-medium tracking-wide">
           Platform health overview · {session.user.loginId}
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {stats.map((s) => {
           const Icon = s.icon
           return (
             <Link key={s.label} href={s.href}>
               <div
-                className={`rounded-xl border p-4 hover:shadow-sm transition-shadow cursor-pointer ${
+                className={`glass-stat-card p-6 hover:shadow-3xl transition-all duration-500 cursor-pointer group ${
                   s.highlight
-                    ? "bg-red-50 border-red-200"
-                    : "bg-white border-zinc-200"
+                    ? "border-[#8b3b9e]/40 bg-[#8b3b9e]/5"
+                    : ""
                 }`}
               >
-                <Icon className={`w-5 h-5 ${s.color} mb-2`} />
-                <p className="text-2xl font-bold text-zinc-900">{s.value}</p>
-                <p className="text-xs text-zinc-400 mt-0.5">{s.label}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <Icon className={`w-7 h-7 ${s.color} group-hover:scale-110 transition-transform duration-300`} />
+                  {s.highlight && (
+                    <div className="w-2 h-2 bg-[#8b3b9e] rounded-full animate-pulse" />
+                  )}
+                </div>
+                <p className="text-3xl md:text-4xl font-bold text-[#1a1a1a] group-hover:text-[#8b3b9e] transition-colors duration-300">
+                  {s.value}
+                </p>
+                <p className="text-xs md:text-sm text-[#8b3b9e]/70 font-medium mt-1 tracking-wide group-hover:text-[#8b3b9e]/90">
+                  {s.label}
+                </p>
               </div>
             </Link>
           )
@@ -108,43 +119,56 @@ export default async function AdminDashboard() {
       <AdminChartsWrapper data={chartData} />
 
       {/* Recent ECOs */}
-      <div className="bg-white rounded-xl border border-zinc-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-zinc-800">Recent ECOs</h2>
+      <div className="glass-card max-w-4xl">
+        <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/30">
+          <h2 className="text-2xl font-bold text-[#8b3b9e] tracking-tight">Recent ECOs</h2>
           <Link href="/eco">
-            <Button variant="ghost" size="sm">View All →</Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="glass-button border-[#8b3b9e]/30 text-[#8b3b9e] hover:bg-[#8b3b9e]/10 hover:border-[#8b3b9e]/50 font-medium tracking-wide"
+            >
+              View All →
+            </Button>
           </Link>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {recentECOs.length === 0 ? (
-            <p className="text-sm text-zinc-400 text-center py-6">No ECOs yet</p>
+            <div className="glass-empty text-center py-12">
+              <p className="text-lg text-[#8b3b9e]/60 font-medium">No ECOs yet</p>
+            </div>
           ) : (
             recentECOs.map((eco) => (
               <Link key={eco.id} href={`/eco/${eco.id}`}>
-                <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 hover:bg-zinc-50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium text-zinc-800">{eco.title}</p>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      {eco.product.name} v{eco.product.version} · by {eco.user.loginId}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        STAGE_COLORS[eco.stage] ?? "bg-zinc-100 text-zinc-600"
-                      }`}
-                    >
-                      {eco.stage}
-                    </span>
-                    <Badge
-                      variant={
-                        ["HIGH", "CRITICAL"].includes(String(eco.riskLevel))
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {String(eco.riskLevel)}
-                    </Badge>
+                <div className="glass-eco-card p-6 hover:shadow-3xl transition-all duration-500 group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <p className="text-lg font-bold text-[#1a1a1a] group-hover:text-[#8b3b9e] transition-colors group-hover:translate-x-1">
+                        {eco.title}
+                      </p>
+                      <p className="text-sm text-[#8b3b9e]/70 mt-1 font-medium tracking-wide">
+                        {eco.product.name} v{eco.product.version} · by {eco.user.loginId}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0 ml-4">
+                      <span
+                        className={`glass-badge px-3 py-1.5 rounded-xl font-semibold text-xs shadow-lg ${
+                          STAGE_COLORS[eco.stage] ?? "bg-[#e6c6ed]/50 text-[#8b3b9e]"
+                        }`}
+                      >
+                        {eco.stage}
+                      </span>
+                      <Badge
+                        variant={
+                          ["HIGH", "CRITICAL"].includes(String(eco.riskLevel))
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className="glass-badge-border font-semibold text-xs shadow-md"
+                      >
+                        {String(eco.riskLevel)}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </Link>

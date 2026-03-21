@@ -1,11 +1,15 @@
 import type { Metadata } from "next"
-import { Geist } from "next/font/google"
+import { DM_Sans } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/sonner"
 import { SessionProvider } from "next-auth/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-const geist = Geist({ subsets: ["latin"] })
+const dmSans = DM_Sans({ 
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-dm-sans"
+})
 
 export const metadata: Metadata = {
   title: "PLM Intelligence Platform",
@@ -19,7 +23,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={geist.className}>
+      <body className={`${dmSans.variable} font-['DM_Sans'] bg-gradient-to-br from-slate-50 via-white to-[#e6c6ed]/20`}>
         <SessionProvider>
           <TooltipProvider>
             {children}
@@ -30,4 +34,3 @@ export default function RootLayout({
     </html>
   )
 }
-  

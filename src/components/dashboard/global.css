@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: rgba(139, 59, 158, 0.15);
+  --glass-blur: blur(24px);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-slate-50 via-white to-[#e6c6ed]/20 antialiased;
+    background-attachment: fixed;
+  }
+}
+
+@layer components {
+  /* Glassmorphism Base Classes */
+  .glass-surface {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: 
+      0 25px 50px -12px var(--glass-shadow),
+      0 10px 20px -6px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+  
+  .glass-card {
+    @apply glass-surface rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 hover:-translate-y-1;
+  }
+  
+  .glass-header {
+    @apply glass-surface rounded-4xl p-10 shadow-3xl;
+    box-shadow: 
+      0 35px 60px -15px var(--glass-shadow),
+      inset 0 2px 0 rgba(255, 255, 255, 0.95);
+  }
+  
+  /* Purple Theme Colors */
+  .purple-gradient {
+    background: linear-gradient(135deg, #8b3b9e 0%, #be71d1 50%, #e6c6ed 100%);
+  }
+  
+  .purple-gradient-text {
+    @apply bg-gradient-to-r from-[#8b3b9e] via-[#be71d1] to-[#e6c6ed] bg-clip-text text-transparent;
+  }
+}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+@layer components {
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-xl border border-white/30 shadow-2xl rounded-3xl p-8 hover:shadow-3xl transition-all duration-500 hover:-translate-y-1 hover:border-[#8b3b9e]/40;
+    box-shadow: 
+      0 25px 45px -10px rgba(139, 59, 158, 0.15),
+      0 10px 20px -5px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+}
+
+.font-['DM_Sans'] {
+  font-family: 'DM Sans', sans-serif;
+}
+@layer components {
+  .glass-header {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-2xl rounded-3xl p-8 mb-8;
+    box-shadow: 
+      0 25px 50px -12px rgba(139, 59, 158, 0.15),
+      0 8px 20px -6px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .glass-stat-card {
+    @apply bg-white/60 backdrop-blur-2xl border border-white/40 shadow-xl rounded-3xl hover:shadow-4xl transition-all duration-500 hover:-translate-y-2;
+    box-shadow: 
+      0 20px 40px -8px rgba(139, 59, 158, 0.12),
+      0 8px 16px -4px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-2xl border border-white/30 shadow-2xl rounded-3xl p-8;
+    box-shadow: 
+      0 25px 45px -10px rgba(139, 59, 158, 0.15),
+      0 10px 20px -5px rgba(0, 0, 0, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  .glass-eco-card {
+    @apply bg-white/70 backdrop-blur-xl border border-white/50 rounded-2xl hover:border-[#8b3b9e]/30 hover:bg-white/80 transition-all duration-500;
+    box-shadow: 
+      0 8px 25px rgba(139, 59, 158, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-badge {
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(139, 59, 158, 0.15);
+  }
+
+  .glass-badge-border {
+    border: 1px solid rgba(139, 59, 158, 0.2) !important;
+    backdrop-filter: blur(10px);
+  }
+
+  .glass-button {
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 12px rgba(139, 59, 158, 0.1);
+  }
+
+  .glass-empty {
+    backdrop-filter: blur(10px);
+    border: 1px dashed rgba(139, 59, 158, 0.2);
+  }
+}
+@layer components {
+  /* Main Glass Components */
+  .glass-header {
+    @apply bg-white/70 backdrop-blur-3xl border border-white/50 shadow-2xl rounded-4xl p-10;
+    box-shadow: 
+      0 35px 60px -15px rgba(139, 59, 158, 0.2),
+      0 12px 24px -8px rgba(0, 0, 0, 0.1),
+      inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-stat {
+    @apply bg-white/60 backdrop-blur-3xl border border-white/40 shadow-2xl hover:shadow-4xl rounded-4xl;
+    box-shadow: 
+      0 25px 50px -12px rgba(139, 59, 158, 0.15),
+      0 10px 20px -6px rgba(0, 0, 0, 0.08),
+      inset 0 2px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .glass-card {
+    @apply bg-white/65 backdrop-blur-3xl border border-white/40 shadow-3xl rounded-4xl p-10;
+    box-shadow: 
+      0 40px 80px -20px rgba(139, 59, 158, 0.18),
+      0 15px 30px -10px rgba(0, 0, 0, 0.12),
+      inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-eco-item {
+    @apply bg-white/80 backdrop-blur-2xl border border-white/60 hover:border-[#8b3b9e]/40;
+    box-shadow: 
+      0 15px 35px rgba(139, 59, 158, 0.12),
+      inset 0 2px 0 rgba(255, 255, 255, 1);
+  }
+
+  /* Glass Buttons & Badges */
+  .glass-button {
+    @apply bg-white/80 backdrop-blur-xl border-white/50 text-[#8b3b9e] hover:text-[#8b3b9e]/90 shadow-xl hover:shadow-2xl;
+    box-shadow: 
+      0 8px 25px rgba(139, 59, 158, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-stage-badge,
+  .glass-badge-lg {
+    backdrop-filter: blur(20px);
+    box-shadow: 
+      0 8px 25px rgba(139, 59, 158, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-empty-state {
+    @apply bg-white/70 backdrop-blur-xl border-2 border-dashed border-[#8b3b9e]/30 rounded-3xl;
+    box-shadow: 
+      0 12px 30px rgba(139, 59, 158, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+}
+@layer components {
+  /* Approver Dashboard Specific Glass Components */
+  .glass-header {
+    @apply bg-white/75 backdrop-blur-3xl border border-white/50 shadow-3xl rounded-4xl p-12;
+    box-shadow: 
+      0 40px 80px -20px rgba(139, 59, 158, 0.2),
+      0 15px 30px -10px rgba(0, 0, 0, 0.12),
+      inset 0 2px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .glass-stat-card {
+    @apply bg-white/70 backdrop-blur-3xl border border-white/50 shadow-3xl rounded-4xl hover:shadow-5xl transition-all duration-700;
+    box-shadow: 
+      0 35px 70px -15px rgba(139, 59, 158, 0.18),
+      0 12px 25px -8px rgba(0, 0, 0, 0.1),
+      inset 0 2px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  .glass-card {
+    @apply bg-white/70 backdrop-blur-3xl border border-white/40 shadow-4xl rounded-4xl overflow-hidden;
+    box-shadow: 
+      0 50px 100px -25px rgba(139, 59, 158, 0.22),
+      0 20px 40px -12px rgba(0, 0, 0, 0.15),
+      inset 0 2px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .glass-alert-danger {
+    @apply bg-gradient-to-r from-[#8b3b9e]/10 to-[#be71d1]/10 border-[#8b3b9e]/30 shadow-3xl;
+    backdrop-filter: blur(32px);
+  }
+
+  .glass-icon-circle {
+    @apply shadow-3xl border border-white/60;
+    backdrop-filter: blur(24px);
+  }
+
+  .glass-badge-danger {
+    background: rgba(139, 59, 158, 0.15) !important;
+    border: 1px solid rgba(139, 59, 158, 0.3) !important;
+  }
+
+  .glass-table-header {
+    @apply bg-white/60 backdrop-blur-xl border-b border-white/50 shadow-inner;
+  }
+
+  .glass-table-row {
+    @apply bg-white/80 backdrop-blur-2xl border border-white/60 hover:border-[#8b3b9e]/40 hover:bg-white/90;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-sla-badge,
+  .glass-button {
+    backdrop-filter: blur(20px);
+    box-shadow: 
+      0 12px 30px rgba(139, 59, 158, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .glass-empty-state {
+    @apply bg-white/60 backdrop-blur-2xl border-2 border-dashed border-[#8b3b9e]/30 shadow-2xl rounded-4xl;
+  }
+}
+glass-header: bg-white/75 backdrop-blur-3xl border border-white/50 shadow-3xl rounded-4xl p-12
+glass-stat-card: bg-white/70 backdrop-blur-3xl border border-white/50 shadow-3xl rounded-4xl
+glass-card: bg-white/70 backdrop-blur-3xl border border-white/40 shadow-4xl rounded-4xl
+glass-icon-circle: shadow-3xl border border-white/60 backdrop-blur-2xl
+glass-button: bg-white/80 backdrop-blur-xl border-white/50 text-[#8b3b9e] hover:shadow-3xl
+glass-eco-card: bg-white/80 backdrop-blur-2xl border border-white/60 hover:border-[#8b3b9e]/40
+glass-stage-badge: backdrop-blur-sm with purple opacity backgrounds
+glass-header: bg-white/75 backdrop-blur-3xl border border-white/50 shadow-3xl rounded-4xl p-12
+glass-stat-card: bg-white/70 backdrop-blur-3xl border border-white/50 shadow-3xl rounded-4xl hover:shadow-4xl
+glass-card: bg-white/70 backdrop-blur-3xl border border-white/40 shadow-4xl rounded-4xl overflow-hidden
+glass-product-card: bg-white/80 backdrop-blur-2xl border border-white/60 hover:border-[#8b3b9e]/40
+glass-bom-card: bg-white/80 backdrop-blur-2xl border border-white/60 hover:border-[#8b3b9e]/40
+glass-icon-circle: shadow-3xl border border-white/60 backdrop-blur-2xl
+glass-badge: bg-white/80 backdrop-blur-xl border-white/50 shadow-xl
+

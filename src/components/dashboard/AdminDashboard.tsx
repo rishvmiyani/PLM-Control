@@ -13,14 +13,12 @@ import {
 } from "lucide-react"
 import AdminChartsWrapper from "@/components/dashboard/AdminChartsWrapper"
 
-// ⚠️ NO dynamic import here — moved to AdminChartsWrapper.tsx
-
 const STAGE_COLORS: Record<string, string> = {
-  "New": "bg-zinc-100 text-zinc-700",
-  "Engineering Review": "bg-blue-100 text-blue-700",
-  "Approval": "bg-yellow-100 text-yellow-700",
-  "Done": "bg-green-100 text-green-700",
-  "Rejected": "bg-red-100 text-red-700",
+  "New": "bg-[#e6c6ed]/60 backdrop-blur-sm text-[#8b3b9e]",
+  "Engineering Review": "bg-[#be71d1]/50 backdrop-blur-sm text-[#8b3b9e]",
+  "Approval": "bg-[#8b3b9e]/30 backdrop-blur-sm text-[#8b3b9e]",
+  "Done": "bg-[#be71d1]/70 backdrop-blur-sm text-[#8b3b9e]",
+  "Rejected": "bg-[#e6c6ed]/50 backdrop-blur-sm text-[#8b3b9e]",
 }
 
 export default async function AdminDashboard() {
@@ -64,7 +62,7 @@ export default async function AdminDashboard() {
       icon: Package,
       label: "Active Products",
       value: totalProducts,
-      color: "text-blue-500",
+      color: "text-[#8b3b9e]",
       href: "/products",
       highlight: false,
     },
@@ -72,7 +70,7 @@ export default async function AdminDashboard() {
       icon: ListTree,
       label: "Active BOMs",
       value: totalBOMs,
-      color: "text-purple-500",
+      color: "text-[#be71d1]",
       href: "/bom",
       highlight: false,
     },
@@ -80,7 +78,7 @@ export default async function AdminDashboard() {
       icon: GitPullRequest,
       label: "Open ECOs",
       value: openECOs,
-      color: "text-orange-500",
+      color: "text-[#8b3b9e]",
       href: "/eco",
       highlight: false,
     },
@@ -88,7 +86,7 @@ export default async function AdminDashboard() {
       icon: CheckCircle,
       label: "Done ECOs",
       value: doneECOs,
-      color: "text-green-500",
+      color: "text-[#be71d1]",
       href: "/eco",
       highlight: false,
     },
@@ -96,7 +94,7 @@ export default async function AdminDashboard() {
       icon: AlertTriangle,
       label: "Conflicts",
       value: conflictECOs,
-      color: "text-red-500",
+      color: "text-[#e6c6ed]",
       href: "/eco",
       highlight: conflictECOs > 0,
     },
@@ -104,7 +102,7 @@ export default async function AdminDashboard() {
       icon: AlertTriangle,
       label: "High Risk",
       value: highRiskECOs,
-      color: "text-orange-500",
+      color: "text-[#8b3b9e]",
       href: "/eco",
       highlight: highRiskECOs > 0,
     },
@@ -112,7 +110,7 @@ export default async function AdminDashboard() {
       icon: Users,
       label: "Users",
       value: totalUsers,
-      color: "text-zinc-400",
+      color: "text-[#be71d1]",
       href: "/settings/stages",
       highlight: false,
     },
@@ -128,31 +126,42 @@ export default async function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="font-['DM_Sans'] space-y-8 p-6 lg:p-12">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Admin Dashboard</h1>
-        <p className="text-zinc-500 text-sm mt-0.5">
+      <div className="glass-header">
+        <h1 className="text-3xl lg:text-4xl font-black bg-gradient-to-r from-[#8b3b9e] via-[#be71d1] to-[#8b3b9e] bg-clip-text text-transparent drop-shadow-2xl">
+          Admin Dashboard
+        </h1>
+        <p className="text-[#8b3b9e]/80 text-lg mt-2 font-semibold tracking-wide">
           Platform health overview · {session.user.loginId}
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {stats.map((s) => {
           const Icon = s.icon
           return (
             <Link key={s.label} href={s.href}>
               <div
-                className={`rounded-xl border p-4 hover:shadow-sm transition-shadow cursor-pointer ${
+                className={`glass-stat p-8 rounded-3xl cursor-pointer group hover:-translate-y-3 transition-all duration-500 hover:shadow-3xl ${
                   s.highlight
-                    ? "bg-red-50 border-red-200"
-                    : "bg-white border-zinc-200"
+                    ? "ring-2 ring-[#8b3b9e]/30 bg-gradient-to-br from-[#8b3b9e]/5 to-[#be71d1]/5 border-[#8b3b9e]/40"
+                    : ""
                 }`}
               >
-                <Icon className={`w-5 h-5 ${s.color} mb-2`} />
-                <p className="text-2xl font-bold text-zinc-900">{s.value}</p>
-                <p className="text-xs text-zinc-400 mt-0.5">{s.label}</p>
+                <div className="flex items-start justify-between mb-4">
+                  <Icon className={`w-10 h-10 ${s.color} group-hover:scale-110 transition-all duration-300 drop-shadow-lg`} />
+                  {s.highlight && (
+                    <div className="w-3 h-3 bg-gradient-to-r from-[#8b3b9e] to-[#be71d1] rounded-full animate-pulse shadow-lg" />
+                  )}
+                </div>
+                <p className="text-4xl lg:text-5xl font-black text-[#1f1f1f] group-hover:text-[#8b3b9e] transition-all duration-300 drop-shadow-md">
+                  {s.value}
+                </p>
+                <p className="text-sm lg:text-base text-[#8b3b9e]/70 font-semibold mt-2 tracking-wide group-hover:text-[#8b3b9e]/90">
+                  {s.label}
+                </p>
               </div>
             </Link>
           )
@@ -163,48 +172,63 @@ export default async function AdminDashboard() {
       <AdminChartsWrapper data={chartData} />
 
       {/* Recent ECOs */}
-      <div className="bg-white rounded-xl border border-zinc-200 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-zinc-800">Recent ECOs</h2>
+      <div className="glass-card max-w-6xl">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 pb-8 border-b border-white/30">
+          <h2 className="text-3xl font-black text-[#8b3b9e] tracking-tight drop-shadow-lg mb-4 lg:mb-0">
+            Recent ECOs
+          </h2>
           <Link href="/eco">
-            <Button variant="ghost" size="sm">View All →</Button>
+            <Button 
+              variant="ghost" 
+              size="lg" 
+              className="glass-button px-8 py-3 font-semibold tracking-wide border-2 hover:bg-[#8b3b9e]/20"
+            >
+              View All →
+            </Button>
           </Link>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-4">
           {recentECOs.length === 0 ? (
-            <p className="text-sm text-zinc-400 text-center py-6">
-              No ECOs yet
-            </p>
+            <div className="glass-empty-state text-center py-16 px-8">
+              <p className="text-2xl font-semibold text-[#8b3b9e]/60 tracking-wide">
+                No ECOs yet
+              </p>
+              <p className="text-lg text-[#8b3b9e]/40 mt-2 font-medium">
+                Get started by creating your first ECO
+              </p>
+            </div>
           ) : (
             recentECOs.map((eco) => (
               <Link key={eco.id} href={`/eco/${eco.id}`}>
-                <div className="flex items-center justify-between p-3 rounded-lg border border-zinc-100 hover:bg-zinc-50 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium text-zinc-800">
-                      {eco.title}
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      {eco.product.name} v{eco.product.version} · by{" "}
-                      {eco.user.loginId}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        STAGE_COLORS[eco.stage] ?? "bg-zinc-100 text-zinc-600"
-                      }`}
-                    >
-                      {eco.stage}
-                    </span>
-                    <Badge
-                      variant={
-                        ["HIGH", "CRITICAL"].includes(String(eco.riskLevel))
-                          ? "destructive"
-                          : "secondary"
-                      }
-                    >
-                      {String(eco.riskLevel)}
-                    </Badge>
+                <div className="glass-eco-item p-8 rounded-2xl hover:shadow-4xl hover:-translate-y-2 transition-all duration-500 group cursor-pointer">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                    <div className="flex-1">
+                      <p className="text-xl lg:text-2xl font-bold text-[#1f1f1f] group-hover:text-[#8b3b9e] transition-all duration-300 drop-shadow-lg line-clamp-1">
+                        {eco.title}
+                      </p>
+                      <p className="text-base lg:text-lg text-[#8b3b9e]/80 mt-2 font-semibold tracking-wide">
+                        {eco.product.name} v{eco.product.version} · by {eco.user.loginId}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <span
+                        className={`glass-stage-badge px-6 py-3 rounded-2xl font-bold text-sm shadow-xl transform hover:scale-105 transition-all duration-200 ${
+                          STAGE_COLORS[eco.stage] ?? "bg-[#e6c6ed]/60 backdrop-blur-sm text-[#8b3b9e]"
+                        }`}
+                      >
+                        {eco.stage}
+                      </span>
+                      <Badge
+                        variant={
+                          ["HIGH", "CRITICAL"].includes(String(eco.riskLevel))
+                            ? "destructive"
+                            : "secondary"
+                        }
+                        className="glass-badge-lg px-4 py-2 font-bold text-base shadow-xl border-2"
+                      >
+                        {String(eco.riskLevel)}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
               </Link>

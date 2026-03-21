@@ -162,25 +162,7 @@ function TopBar({ onToggleSidebar, sidebarOpen }: Props) {
               </button>
             </div>
           </div>
-<<<<<<< HEAD
-          <div className="hidden md:block">
-            <p className="text-sm font-medium text-zinc-800">
-              {session?.user?.loginId}
-            </p>
-            <p className="text-xs text-zinc-400">{session?.user?.role}</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => signOut({ callbackUrl: "/login" })}  
-            className="ml-1 text-zinc-400 hover:text-red-500"
-          >
-            <LogOut className="w-4 h-4" />
-          </Button>
-        </div>
-=======
         )}
->>>>>>> beed07c (add new files and updates)
       </div>
     </header>
   )

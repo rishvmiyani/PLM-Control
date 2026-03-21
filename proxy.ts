@@ -1,10 +1,37 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
 
-export function proxy(request: NextRequest) {
-  return NextResponse.next();
+export async function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl
+
+  const isAuthPage =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/forgot-password")
+
+  const isApiRoute = pathname.startsWith("/api")
+  const isStatic =
+    pathname.startsWith("/_next") || pathname === "/favicon.ico"
+
+  if (isApiRoute || isStatic) return NextResponse.next()
+
+  // Check session via cookie
+  const sessionToken =
+    req.cookies.get("authjs.session-token") ??
+    req.cookies.get("__Secure-authjs.session-token")
+
+  const isLoggedIn = !!sessionToken
+
+  if (!isLoggedIn && !isAuthPage) {
+    return NextResponse.redirect(new URL("/login", req.url))
+  }
+
+  if (isLoggedIn && isAuthPage) {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
+  }
+
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
-};
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+}

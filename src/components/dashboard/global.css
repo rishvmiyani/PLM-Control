@@ -3,6 +3,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+import '@/components/dashboard/global.css';
 
 :root {
   --glass-bg: rgba(255, 255, 255, 0.65);
@@ -259,3 +260,20 @@ glass-bom-card: bg-white/80 backdrop-blur-2xl border border-white/60 hover:borde
 glass-icon-circle: shadow-3xl border border-white/60 backdrop-blur-2xl
 glass-badge: bg-white/80 backdrop-blur-xl border-white/50 shadow-xl
 
+@layer components {
+  /* NEW: Message Icon Component - SAFE ADD */
+  .glass-message-icon {
+    @apply w-12 h-12 bg-white/80 backdrop-blur-2xl border-2 border-white/60 shadow-3xl rounded-3xl flex items-center justify-center hover:shadow-4xl hover:-translate-y-1 hover:border-[#8b3b9e]/50 transition-all duration-500 cursor-pointer group;
+    box-shadow: 
+      0 20px 40px -10px rgba(139, 59, 158, 0.20),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .glass-message-icon svg {
+    @apply w-6 h-6 text-[#8b3b9e] group-hover:scale-110 transition-transform duration-300;
+  }
+
+  .glass-message-icon-active {
+    @apply border-[#8b3b9e]/70 bg-gradient-to-br from-[#8b3b9e]/10 to-[#be71d1]/10 shadow-purple-500/25;
+  }
+}

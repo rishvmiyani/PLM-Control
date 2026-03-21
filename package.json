@@ -2,25 +2,47 @@
   "name": "plm-intelligence-platform",
   "version": "0.1.0",
   "private": true,
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint"
   },
   "dependencies": {
-    "next": "16.2.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "@dnd-kit/core": "latest",
+    "@dnd-kit/sortable": "latest",
+    "@hookform/resolvers": "latest",
+    "@prisma/client": "latest",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@uploadthing/react": "latest",
+    "@xyflow/react": "latest",
+    "bcryptjs": "latest",
+    "date-fns": "latest",
+    "dotenv": "^17.3.1",
+    "next": "latest",
+    "next-auth": "beta",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-hook-form": "latest",
+    "recharts": "latest",
+    "sonner": "latest",
+    "tailwindcss": "^4.2.2",
+    "uploadthing": "latest",
+    "zod": "latest",
+    "zustand": "latest"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "@types/bcryptjs": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "prisma": "latest",
+    "ts-node": "^10.9.2",
+    "typescript": "latest"
   }
+  
+
 }

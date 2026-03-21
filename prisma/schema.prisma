@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  ENGINEERING
+  APPROVER
+  OPERATIONS
+}
+
+enum Status {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ECOType {
+  PRODUCT
+  BOM
+  ROLLBACK
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ConflictStatus {
+  NONE
+  CONFLICT
+  RESOLVED
+}
+
+enum ApprovalCategory {
+  REQUIRED
+  OPTIONAL
+}
+
+model User {
+  id            String         @id @default(cuid())
+  loginId       String         @unique
+  email         String         @unique
+  password      String
+  role          Role           @default(ENGINEERING)
+  ecos          ECO[]
+  approvalRules ApprovalRule[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime       @default(now())
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String      @db.VarChar(255)
+  salePrice   Float
+  costPrice   Float
+  version     Int         @default(1)
+  status      Status      @default(ACTIVE)
+  attachments String[]
+  boms        BOM[]
+  components  Component[]
+  ecos        ECO[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model BOM {
+  id         String      @id @default(cuid())
+  product    Product     @relation(fields: [productId], references: [id])
+  productId  String
+  version    Int         @default(1)
+  status     Status      @default(ACTIVE)
+  components Component[]
+  operations Operation[]
+  ecos       ECO[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Component {
+  id        String  @id @default(cuid())
+  bom       BOM     @relation(fields: [bomId], references: [id])
+  bomId     String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Float
+}
+
+model Operation {
+  id           String @id @default(cuid())
+  bom          BOM    @relation(fields: [bomId], references: [id])
+  bomId        String
+  name         String
+  durationMins Int
+  workCenter   String
+}
+
+model ECO {
+  id                String         @id @default(cuid())
+  title             String
+  type              ECOType
+  product           Product        @relation(fields: [productId], references: [id])
+  productId         String
+  bom               BOM?           @relation(fields: [bomId], references: [id])
+  bomId             String?
+  user              User           @relation(fields: [userId], references: [id])
+  userId            String
+  effectiveDate     DateTime
+  versionUpdate     Boolean        @default(false)
+  stage             String         @default("New")
+  proposedChanges   Json
+  riskScore         Int            @default(0)
+  riskLevel         RiskLevel      @default(LOW)
+  conflictStatus    ConflictStatus @default(NONE)
+  conflictingEcoIds String[]       @default([])
+  enteredStageAt    DateTime       @default(now())
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+}
+
+model ECOStage {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  order           Int
+  requireApproval Boolean        @default(false)
+  slaHours        Int            @default(24)
+  approvalRules   ApprovalRule[]
+}
+
+model ApprovalRule {
+  id       String           @id @default(cuid())
+  stage    ECOStage         @relation(fields: [stageId], references: [id])
+  stageId  String
+  user     User             @relation(fields: [userId], references: [id])
+  userId   String
+  category ApprovalCategory @default(REQUIRED)
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  eco            ECO      @relation(fields: [ecoId], references: [id])
+  ecoId          String
+  action         String
+  affectedRecord String
+  oldValue       String?
+  newValue       String?
+  user           User     @relation(fields: [userId], references: [id])
+  userId         String
+  timestamp      DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  eco       ECO      @relation(fields: [ecoId], references: [id])
+  ecoId     String
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

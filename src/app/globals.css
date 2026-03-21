@@ -16,6 +16,9 @@
   background: rgba(139,59,158,0.03);
 }
 
+body {
+  font-family: 'DM Sans', sans-serif;
+}
 /* ── Status badges ── */
 .badge-review   { background: #fff3e0; color: #e07b00; border: 1px solid rgba(224,123,0,0.2); }
 .badge-approved { background: #e8f5e9; color: #2e7d32; border: 1px solid rgba(46,125,50,0.2); }

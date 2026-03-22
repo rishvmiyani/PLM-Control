@@ -1,148 +1,64 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { auth }   from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { calculateAndSaveRisk } from "@/lib/risk-engine"
-import { detectConflicts } from "@/lib/conflict-engine"
-import { analyzeRipple } from "@/lib/ripple-engine"
-import { writeAuditLog } from "@/lib/audit"
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-  const { id } = await params
-
-  const eco = await prisma.eCO.findUnique({
-    where: { id },
-    include: {
-      product: true,
-      bom: {
-        include: {
-          components: {
-            include: {
-              product: { select: { id: true, name: true, costPrice: true } },
-            },
-          },
-          operations: true,
-        },
-      },
-      user: { select: { loginId: true, role: true } },
-      auditLogs: {
-        orderBy: { timestamp: "asc" },
-        include: { user: { select: { loginId: true } } },
-      },
-    },
-  })
-
-  if (!eco) return NextResponse.json({ error: "Not found" }, { status: 404 })
-
-  // Run AI engines on every GET
-  let aiRisk = { score: eco.riskScore, level: String(eco.riskLevel), reasons: [] as string[] }
-  try { aiRisk = await calculateAndSaveRisk(id) } catch (e) { console.warn(e) }
-
-  let aiConflict = { hasConflict: false, conflictingEcoIds: [] as string[], conflictingFields: [] as unknown[] }
-  try { aiConflict = await detectConflicts(id) } catch (e) { console.warn(e) }
-
-  let ripple = { affectedBOMIds: [] as string[], affectedBOMs: [] as unknown[] }
-  try { ripple = await analyzeRipple(id) } catch (e) { console.warn(e) }
-
-  const product = eco.product
-
-  return NextResponse.json({
-    ...eco,
-    aiRisk,
-    aiConflict,
-    ripple,
-    currentProductSnapshot: {
-      name: product.name,
-      salePrice: product.salePrice,
-      costPrice: product.costPrice,
-      version: product.version,
-      status: String(product.status),
-    },
-  })
-}
-
-export async function PATCH(
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id }  = await params
   const session = await auth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const { id } = await params
-  const body = await req.json()
+  const role = session.user.role
+  if (!["ADMIN", "APPROVER"].includes(role))
+    return NextResponse.json({ error: "Only APPROVER or ADMIN can approve" }, { status: 403 })
 
   const eco = await prisma.eCO.findUnique({ where: { id } })
-  if (!eco) return NextResponse.json({ error: "Not found" }, { status: 404 })
+  if (!eco) return NextResponse.json({ error: "ECO not found" }, { status: 404 })
 
-  const updateData: Record<string, unknown> = {}
+  if (eco.stage !== "Approval")
+    return NextResponse.json({
+      error: `ECO must be in Approval stage. Current: ${eco.stage}`
+    }, { status: 400 })
 
-  if (body.stage !== undefined) {
-    updateData.stage = body.stage
-    updateData.enteredStageAt = new Date()
-  }
-  if (body.proposedChanges !== undefined) {
-    updateData.proposedChanges = body.proposedChanges
-  }
-  if (body.versionUpdate !== undefined) {
-    updateData.versionUpdate = body.versionUpdate
+  if (eco.conflictStatus === "CONFLICT")
+    return NextResponse.json({
+      error: "Resolve conflicts before approving"
+    }, { status: 400 })
+
+  // ── Apply changes to product if PRODUCT type ──
+  if (eco.type === "PRODUCT") {
+    const changes = eco.proposedChanges as Record<string, any>
+
+    await prisma.product.update({
+      where: { id: eco.productId },
+      data: {
+        ...(changes.salePrice?.new !== undefined && { salePrice: changes.salePrice.new }),
+        ...(changes.costPrice?.new !== undefined && { costPrice: changes.costPrice.new }),
+        ...(changes.name?.new      !== undefined && { name:      changes.name.new      }),
+        ...(eco.versionUpdate && { version: { increment: 1 } }),
+      },
+    })
   }
 
+  // ── Move ECO to Done ──
   const updated = await prisma.eCO.update({
     where: { id },
-    data: updateData,
+    data:  { stage: "Done", enteredStageAt: new Date() },
   })
 
-  await writeAuditLog(
-    id,
-    body.stage
-      ? `STAGE_CHANGED → ${body.stage}`
-      : "PROPOSED_CHANGES_UPDATED",
-    `ECO:${id}`,
-    body.stage ? eco.stage : null,
-    body.stage ?? null,
-    session.user.id
-  )
+  // ── Audit log ──
+  await prisma.auditLog.create({
+    data: {
+      ecoId:          id,
+      action:         "ECO Approved",
+      affectedRecord: "ECO",
+      oldValue:       "Approval",
+      newValue:       "Done",
+      userId:         session.user.id,
+    },
+  })
 
-  // Recalculate on proposedChanges update
-  if (body.proposedChanges) {
-    try { await calculateAndSaveRisk(id) } catch (e) { console.warn(e) }
-    try { await detectConflicts(id) } catch (e) { console.warn(e) }
-  }
-
-  return NextResponse.json(updated)
-}
-
-export async function DELETE(
-  _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const session = await auth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-  if (session.user.role !== "ADMIN") {
-    return NextResponse.json({ error: "Forbidden — Admin only" }, { status: 403 })
-  }
-
-  const { id } = await params
-
-  const eco = await prisma.eCO.findUnique({ where: { id } })
-  if (!eco) return NextResponse.json({ error: "Not found" }, { status: 404 })
-
-  if (eco.stage === "Done") {
-    return NextResponse.json(
-      { error: "Cannot delete a completed ECO" },
-      { status: 400 }
-    )
-  }
-
-  await prisma.auditLog.deleteMany({ where: { ecoId: id } })
-  await prisma.notification.deleteMany({ where: { ecoId: id } })
-  await prisma.eCO.delete({ where: { id } })
-
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, stage: updated.stage })
 }

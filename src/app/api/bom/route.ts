@@ -1,35 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
+import { auth }   from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { z } from "zod"
-
-const componentSchema = z.object({
-  productId: z.string().min(1),
-  quantity: z.number().positive(),
-})
-
-const operationSchema = z.object({
-  name: z.string().min(1),
-  durationMins: z.number().int().positive(),
-  workCenter: z.string().min(1),
-})
-
-const createSchema = z.object({
-  productId: z.string().min(1),
-  components: z.array(componentSchema).min(1, "At least one component required"),
-  operations: z.array(operationSchema).optional().default([]),
-})
 
 export async function GET() {
   const session = await auth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const boms = await prisma.bOM.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      product: { select: { id: true, name: true, version: true } },
-      components: { include: { product: { select: { id: true, name: true } } } },
-      _count: { select: { operations: true } },
+      product:    { select: { id: true, name: true, version: true } },
+      components: {
+        include: { product: { select: { id: true, name: true } } }
+      },
+      operations: true,
     },
   })
   return NextResponse.json(boms)
@@ -37,57 +21,63 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await auth()
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const allowedRoles = ["ADMIN", "ENGINEERING"]
-  if (!allowedRoles.includes(session.user.role)) {
+  const role = session.user.role
+  if (!["ADMIN", "ENGINEERING"].includes(role))
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-  }
 
   try {
     const body = await req.json()
-    const parsed = createSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-    }
+    const { productId, components, operations } = body
 
-    const { productId, components, operations } = parsed.data
+    if (!productId)
+      return NextResponse.json({ error: "productId is required" }, { status: 400 })
+
+    if (!components || components.length === 0)
+      return NextResponse.json({ error: "At least one component is required" }, { status: 400 })
 
     // Get latest BOM version for this product
-    const latestBOM = await prisma.bOM.findFirst({
-      where: { productId },
+    const lastBOM = await prisma.bOM.findFirst({
+      where:   { productId },
       orderBy: { version: "desc" },
     })
-    const newVersion = (latestBOM?.version ?? 0) + 1
+    const newVersion = (lastBOM?.version ?? 0) + 1
 
+    // Create BOM with components and operations in one transaction
     const bom = await prisma.bOM.create({
       data: {
         productId,
         version: newVersion,
-        status: "ACTIVE",
+        status:  "ACTIVE",
         components: {
-          create: components.map((c) => ({
+          create: components.map((c: { productId: string; quantity: number }) => ({
             productId: c.productId,
-            quantity: c.quantity,
+            quantity:  Number(c.quantity),
           })),
         },
         operations: {
-          create: operations.map((o) => ({
-            name: o.name,
-            durationMins: o.durationMins,
-            workCenter: o.workCenter,
+          create: (operations ?? []).map((o: {
+            name: string; durationMins: number; workCenter: string
+          }) => ({
+            name:         o.name,
+            durationMins: Number(o.durationMins),
+            workCenter:   o.workCenter,
           })),
         },
       },
       include: {
-        components: true,
+        components: {
+          include: { product: { select: { name: true } } }
+        },
         operations: true,
       },
     })
 
     return NextResponse.json(bom, { status: 201 })
-  } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+
+  } catch (err: any) {
+    console.error("BOM create error:", err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

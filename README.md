@@ -41,7 +41,7 @@ CRISP is an **Engineering Change Order (ECO)** system that enforces a structured
 
 ---
 
-## 🎯 Core Objectives
+##  Core Objectives
 
 | # | Objective |
 |---|-----------|
@@ -53,7 +53,7 @@ CRISP is an **Engineering Change Order (ECO)** system that enforces a structured
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 <details>
 <summary><strong>Frontend</strong></summary>
@@ -110,7 +110,7 @@ CRISP is an **Engineering Change Order (ECO)** system that enforces a structured
 
 ---
 
-## 👥 Roles
+##  Roles
 
 ```
 ┌─────────────────────┬────────────────────────────────────────────────────────┐
@@ -128,7 +128,7 @@ CRISP is an **Engineering Change Order (ECO)** system that enforces a structured
 
 ---
 
-## 📦 Core Modules
+##  Core Modules
 
 <details>
 <summary><strong>ECO Management</strong></summary>
@@ -191,7 +191,7 @@ CRISP is an **Engineering Change Order (ECO)** system that enforces a structured
 
 ---
 
-## 🧠 Intelligence Engines
+##  Intelligence Engines
 
 CRISP runs **five real-time engines** that evaluate every ECO automatically — before any human reviews it.
 
@@ -285,7 +285,7 @@ Approval           →   8h window
 
 ---
 
-## 📊 Reports & Analytics
+##  Reports & Analytics
 
 Six built-in reports, all accessible from the Reports module:
 
@@ -302,7 +302,7 @@ Admin dashboard additionally includes live **Recharts** visualizations for ECO t
 
 ---
 
-## 📁 Folder Structure
+##  Folder Structure
 
 ```
 src/
@@ -351,7 +351,7 @@ src/
 
 ---
 
-## ⚙️ Setup Guide
+##  Setup Guide
 
 ### 1 · Clone the repository
 
@@ -399,7 +399,7 @@ npm run dev
 
 ---
 
-## 🔑 Demo Credentials
+##  Demo Credentials
 
 All seeded accounts share the same password — see `.env.example` or the seed file.
 

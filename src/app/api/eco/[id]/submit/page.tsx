@@ -10,33 +10,15 @@ export async function POST(
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const role = session.user.role
-  if (!["ADMIN", "APPROVER"].includes(role))
-    return NextResponse.json({ error: "Only APPROVER or ADMIN can approve" }, { status: 403 })
-
   const eco = await prisma.eCO.findUnique({ where: { id } })
   if (!eco) return NextResponse.json({ error: "ECO not found" }, { status: 404 })
 
-  if (eco.stage !== "Approval")
-    return NextResponse.json({ error: `ECO must be in Approval stage, current: ${eco.stage}` }, { status: 400 })
+  if (eco.stage !== "Engineering Review")
+    return NextResponse.json({ error: "ECO must be in Engineering Review to submit" }, { status: 400 })
 
   const updated = await prisma.eCO.update({
     where: { id },
-    data:  {
-      stage:          "Done",
-      enteredStageAt: new Date(),
-    },
-  })
-
-  await prisma.auditLog.create({
-    data: {
-      ecoId:          id,
-      action:         "ECO Approved",
-      affectedRecord: "ECO",
-      oldValue:       "Approval",
-      newValue:       "Done",
-      userId:         session.user.id,
-    },
+    data:  { stage: "Approval", enteredStageAt: new Date() },
   })
 
   return NextResponse.json({ success: true, stage: updated.stage })

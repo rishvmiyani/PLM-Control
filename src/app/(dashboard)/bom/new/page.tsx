@@ -1,312 +1,428 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { toast } from "sonner"
-import Link from "next/link"
-import { ArrowLeft, Plus, Trash2, ListTree, Cog, Package } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useRouter }           from "next/navigation"
+import Link                    from "next/link"
+import { ArrowLeft, Plus, Trash2, Package, Wrench } from "lucide-react"
 
-interface Product { id: string; name: string; version: number; status: string }
+interface Product { id: string; name: string; version: number }
+
 interface ComponentRow { productId: string; quantity: number }
 interface OperationRow { name: string; durationMins: number; workCenter: string }
 
-const font = "'DM Sans', sans-serif"
-
-const inputStyle: React.CSSProperties = {
-  width: "100%", height: 42,
-  padding: "0 12px",
-  background: "rgba(245,240,252,0.6)",
-  border: "1px solid rgba(190,113,209,0.22)",
-  borderRadius: 10, fontSize: 13, color: "#2d1a38",
-  outline: "none", fontFamily: font,
-  boxSizing: "border-box",
-}
-
 export default function NewBOMPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const preselectedProductId = searchParams.get("productId") ?? ""
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [productId, setProductId] = useState(preselectedProductId)
-  const [components, setComponents] = useState<ComponentRow[]>([{ productId: "", quantity: 1 }])
+  const [products, setProducts]     = useState<Product[]>([])
+  const [productId, setProductId]   = useState("")
+  const [components, setComponents] = useState<ComponentRow[]>([
+    { productId: "", quantity: 1 }
+  ])
   const [operations, setOperations] = useState<OperationRow[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState("")
+
+  const font = "'DM Sans', sans-serif"
 
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
-      .then((data) => setProducts(data.filter((p: Product) => String(p.status) === "ACTIVE")))
-      .catch(() => toast.error("Failed to load products"))
+      .then(setProducts)
   }, [])
 
-  function addComponent() { setComponents([...components, { productId: "", quantity: 1 }]) }
-  function removeComponent(i: number) { setComponents(components.filter((_, idx) => idx !== i)) }
-  function updateComponent(i: number, field: keyof ComponentRow, val: string | number) {
-    const u = [...components]; u[i] = { ...u[i], [field]: val }; setComponents(u)
-  }
-  function addOperation() { setOperations([...operations, { name: "", durationMins: 30, workCenter: "" }]) }
-  function removeOperation(i: number) { setOperations(operations.filter((_, idx) => idx !== i)) }
-  function updateOperation(i: number, field: keyof OperationRow, val: string | number) {
-    const u = [...operations]; u[i] = { ...u[i], [field]: val }; setOperations(u)
+  // ── Components ──────────────────────────────
+  function addComponent() {
+    setComponents((p) => [...p, { productId: "", quantity: 1 }])
   }
 
+  function removeComponent(i: number) {
+    setComponents((p) => p.filter((_, idx) => idx !== i))
+  }
+
+  function updateComponent(i: number, key: keyof ComponentRow, val: string | number) {
+    setComponents((p) => p.map((c, idx) => idx === i ? { ...c, [key]: val } : c))
+  }
+
+  // ── Operations ──────────────────────────────
+  function addOperation() {
+    setOperations((p) => [...p, { name: "", durationMins: 0, workCenter: "" }])
+  }
+
+  function removeOperation(i: number) {
+    setOperations((p) => p.filter((_, idx) => idx !== i))
+  }
+
+  function updateOperation(i: number, key: keyof OperationRow, val: string | number) {
+    setOperations((p) => p.map((o, idx) => idx === i ? { ...o, [key]: val } : o))
+  }
+
+  // ── Available components per row ─────────────
+  // Exclude the selected parent product AND products already selected in other rows
+  function availableProducts(rowIndex: number) {
+    const usedIds = components
+      .map((c, i) => (i !== rowIndex ? c.productId : null))
+      .filter(Boolean)
+    return products.filter(
+      (p) => p.id !== productId && !usedIds.includes(p.id)
+    )
+  }
+
+  // ── Submit ───────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!productId) return toast.error("Select a product")
-    if (components.some((c) => !c.productId)) return toast.error("Fill all component products")
-    setIsLoading(true)
+    setError("")
+
+    if (!productId) { setError("Select a parent product"); return }
+
+    const validComponents = components.filter((c) => c.productId && c.quantity > 0)
+    if (validComponents.length === 0) {
+      setError("Add at least one component with a valid quantity")
+      return
+    }
+
+    // Check for duplicate component products
+    const ids = validComponents.map((c) => c.productId)
+    if (new Set(ids).size !== ids.length) {
+      setError("Duplicate components found. Each component must be a different product.")
+      return
+    }
+
+    setLoading(true)
     try {
       const res = await fetch("/api/bom", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, components, operations }),
+        body:    JSON.stringify({
+          productId,
+          components: validComponents,
+          operations: operations.filter((o) => o.name && o.workCenter),
+        }),
       })
-      if (!res.ok) { const err = await res.json(); throw new Error(JSON.stringify(err.error)) }
+
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error ?? "Failed to create BOM")
+        return
+      }
+
       const bom = await res.json()
-      toast.success("BOM created successfully")
       router.push(`/bom/${bom.id}`)
-    } catch (e) {
-      toast.error("Failed to create BOM"); console.error(e)
+
+    } catch {
+      setError("Something went wrong. Please try again.")
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
+  }
+
+  // ── Styles ───────────────────────────────────
+  const inputStyle: React.CSSProperties = {
+    height: 40, padding: "0 12px",
+    background: "rgba(245,240,252,0.6)",
+    border: "1px solid rgba(190,113,209,0.25)",
+    borderRadius: 9, fontSize: 13, color: "#2d1a38",
+    outline: "none", fontFamily: font,
+    width: "100%", boxSizing: "border-box",
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, fontWeight: 700, color: "#4a2d5a",
+    marginBottom: 6, display: "block",
+    textTransform: "uppercase", letterSpacing: "0.05em",
   }
 
   const sectionCard: React.CSSProperties = {
     background: "rgba(255,255,255,0.92)",
-    border: "1px solid rgba(190,113,209,0.13)",
+    border: "1px solid rgba(190,113,209,0.14)",
     borderRadius: 16, padding: "20px 22px",
-    boxShadow: "0 2px 10px rgba(139,59,158,0.05)",
+    boxShadow: "0 2px 12px rgba(139,59,158,0.06)",
     marginBottom: 16,
   }
 
   return (
-    <div style={{ fontFamily: font, maxWidth: 680 }}>
+    <div style={{ fontFamily: font, maxWidth: 760 }}>
 
       {/* Back */}
       <Link href="/bom" style={{ textDecoration: "none" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 20, color: "#8b3b9e", fontSize: 13, fontWeight: 600 }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          marginBottom: 20, color: "#8b3b9e", fontSize: 13, fontWeight: 600,
+        }}>
           <ArrowLeft style={{ width: 15, height: 15 }} />
           Back to BOMs
         </div>
       </Link>
 
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#2d1a38", margin: 0 }}>New BOM</h1>
-        <p style={{ fontSize: "0.85rem", color: "#9b6aab", margin: "4px 0 0" }}>
-          Add components and operations
+      <div style={{ marginBottom: 20 }}>
+        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#2d1a38", margin: 0 }}>
+          New Bill of Materials
+        </h1>
+        <p style={{ fontSize: 13, color: "#9b6aab", margin: "4px 0 0" }}>
+          Create a BOM by selecting a parent product and its components
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
 
-        {/* Product */}
-        <div style={sectionCard}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(139,59,158,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Package style={{ width: 14, height: 14, color: "#8b3b9e" }} />
-            </div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38", margin: 0 }}>Product</p>
+        {/* Error */}
+        {error && (
+          <div style={{
+            background: "rgba(230,59,111,0.07)",
+            border: "1px solid rgba(230,59,111,0.2)",
+            borderRadius: 10, padding: "10px 14px",
+            color: "#e63b6f", fontSize: 13, fontWeight: 500,
+            marginBottom: 16,
+          }}>
+            ⚠ {error}
           </div>
+        )}
+
+        {/* Parent Product */}
+        <div style={sectionCard}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
+            <Package style={{ width: 16, height: 16, color: "#8b3b9e" }} />
+            <span style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38" }}>
+              Parent Product
+            </span>
+          </div>
+
+          <label style={labelStyle}>
+            Select Product <span style={{ color: "#e63b6f" }}>*</span>
+          </label>
           <select
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
             style={{ ...inputStyle, cursor: "pointer" }}
+            value={productId}
+            onChange={(e) => {
+              setProductId(e.target.value)
+              // Reset components when parent changes
+              setComponents([{ productId: "", quantity: 1 }])
+            }}
           >
-            <option value="">Select a product</option>
+            <option value="">— Select parent product —</option>
             {products.map((p) => (
-              <option key={p.id} value={p.id}>{p.name} (v{p.version})</option>
+              <option key={p.id} value={p.id}>
+                {p.name} (v{p.version})
+              </option>
             ))}
           </select>
         </div>
 
         {/* Components */}
         <div style={sectionCard}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(33,150,243,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <ListTree style={{ width: 14, height: 14, color: "#2196f3" }} />
-              </div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38", margin: 0 }}>Components</p>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(33,150,243,0.08)", color: "#2196f3" }}>
-                {components.length}
+          <div style={{
+            display: "flex", alignItems: "center",
+            justifyContent: "space-between", marginBottom: 14,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <Package style={{ width: 16, height: 16, color: "#8b3b9e" }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38" }}>
+                Components
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "2px 8px",
+                borderRadius: 20, background: "rgba(139,59,158,0.08)", color: "#8b3b9e",
+              }}>
+                {components.filter((c) => c.productId).length}
               </span>
             </div>
             <button
-              type="button"
-              onClick={addComponent}
+              type="button" onClick={addComponent}
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 padding: "6px 12px", borderRadius: 8,
-                background: "rgba(139,59,158,0.07)",
-                border: "1px solid rgba(139,59,158,0.18)",
-                color: "#8b3b9e", fontSize: 12, fontWeight: 600,
+                background: "rgba(139,59,158,0.08)",
+                border: "1px solid rgba(190,113,209,0.25)",
+                color: "#8b3b9e", fontSize: 12, fontWeight: 700,
                 cursor: "pointer", fontFamily: font,
               }}
             >
-              <Plus style={{ width: 13, height: 13 }} /> Add
+              <Plus style={{ width: 12, height: 12 }} /> Add Component
             </button>
           </div>
 
-          {/* Header row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 100px 36px", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#9b6aab", letterSpacing: "0.07em" }}>COMPONENT PRODUCT</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: "#9b6aab", letterSpacing: "0.07em" }}>QTY</span>
+          {/* Column headers */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 130px 36px",
+            gap: 8, marginBottom: 6, padding: "0 4px",
+          }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#9b6aab", letterSpacing: "0.06em" }}>
+              COMPONENT PRODUCT
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#9b6aab", letterSpacing: "0.06em" }}>
+              QUANTITY
+            </span>
             <span />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {components.map((comp, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 100px 36px", gap: 8, alignItems: "center" }}>
-                <select
-                  value={comp.productId}
-                  onChange={(e) => updateComponent(idx, "productId", e.target.value)}
-                  style={{ ...inputStyle, cursor: "pointer" }}
-                >
-                  <option value="">Select product</option>
-                  {products.filter(p => p.id !== productId).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number" min="0.01" step="0.01"
-                  value={comp.quantity}
-                  onChange={(e) => updateComponent(idx, "quantity", parseFloat(e.target.value) || 1)}
-                  style={inputStyle}
-                />
-                <button
-                  type="button"
-                  onClick={() => removeComponent(idx)}
-                  disabled={components.length === 1}
-                  style={{
-                    width: 36, height: 36, borderRadius: 9,
-                    border: "1px solid rgba(198,40,40,0.15)",
-                    background: "rgba(198,40,40,0.05)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    cursor: components.length === 1 ? "not-allowed" : "pointer",
-                    opacity: components.length === 1 ? 0.4 : 1,
-                  }}
-                >
-                  <Trash2 style={{ width: 14, height: 14, color: "#c62828" }} />
-                </button>
-              </div>
-            ))}
-          </div>
+          {/* Component rows */}
+          {components.map((comp, i) => (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 130px 36px",
+              gap: 8, marginBottom: 8, alignItems: "center",
+            }}>
+              {/* Product select — excludes parent + already selected */}
+              <select
+                style={{ ...inputStyle, cursor: "pointer" }}
+                value={comp.productId}
+                onChange={(e) => updateComponent(i, "productId", e.target.value)}
+              >
+                <option value="">— Select component —</option>
+                {availableProducts(i).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} (v{p.version})
+                  </option>
+                ))}
+              </select>
+
+              {/* Quantity */}
+              <input
+                type="number" min={0.01} step={0.01}
+                style={inputStyle}
+                value={comp.quantity}
+                onChange={(e) => updateComponent(i, "quantity", parseFloat(e.target.value) || 0)}
+              />
+
+              {/* Remove */}
+              <button
+                type="button"
+                onClick={() => removeComponent(i)}
+                disabled={components.length === 1}
+                style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  border: "1px solid rgba(198,40,40,0.2)",
+                  background: "rgba(198,40,40,0.05)",
+                  color: "#c62828", cursor: components.length === 1 ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: components.length === 1 ? 0.3 : 1,
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 style={{ width: 13, height: 13 }} />
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* Operations */}
         <div style={sectionCard}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(76,175,80,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Cog style={{ width: 14, height: 14, color: "#4caf50" }} />
-              </div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38", margin: 0 }}>Operations</p>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 999, background: "rgba(76,175,80,0.08)", color: "#4caf50" }}>
-                Optional
+          <div style={{
+            display: "flex", alignItems: "center",
+            justifyContent: "space-between", marginBottom: 14,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <Wrench style={{ width: 16, height: 16, color: "#8b3b9e" }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#2d1a38" }}>
+                Operations
               </span>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "2px 8px",
+                borderRadius: 20, background: "rgba(139,59,158,0.08)", color: "#8b3b9e",
+              }}>
+                {operations.length}
+              </span>
+              <span style={{ fontSize: 11, color: "#b0a0bc" }}>(optional)</span>
             </div>
             <button
-              type="button"
-              onClick={addOperation}
+              type="button" onClick={addOperation}
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 padding: "6px 12px", borderRadius: 8,
-                background: "rgba(139,59,158,0.07)",
-                border: "1px solid rgba(139,59,158,0.18)",
-                color: "#8b3b9e", fontSize: 12, fontWeight: 600,
+                background: "rgba(139,59,158,0.08)",
+                border: "1px solid rgba(190,113,209,0.25)",
+                color: "#8b3b9e", fontSize: 12, fontWeight: 700,
                 cursor: "pointer", fontFamily: font,
               }}
             >
-              <Plus style={{ width: 13, height: 13 }} /> Add
+              <Plus style={{ width: 12, height: 12 }} /> Add Operation
             </button>
           </div>
 
-          {operations.length === 0 ? (
-            <p style={{ fontSize: 13, color: "#c5a8d4", textAlign: "center", padding: "12px 0" }}>
-              No operations added yet.
+          {operations.length === 0 && (
+            <p style={{ fontSize: 13, color: "#c0b0cc", textAlign: "center", padding: "16px 0" }}>
+              No operations added yet. Click "Add Operation" to add one.
             </p>
-          ) : (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 110px 1fr 36px", gap: 8, marginBottom: 8 }}>
-                {["OPERATION NAME", "DURATION (MIN)", "WORK CENTER", ""].map(h => (
-                  <span key={h} style={{ fontSize: 10, fontWeight: 700, color: "#9b6aab", letterSpacing: "0.07em" }}>{h}</span>
-                ))}
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {operations.map((op, idx) => (
-                  <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 110px 1fr 36px", gap: 8, alignItems: "center" }}>
-                    <input
-                      placeholder="e.g. Welding"
-                      value={op.name}
-                      onChange={(e) => updateOperation(idx, "name", e.target.value)}
-                      style={inputStyle}
-                    />
-                    <input
-                      type="number" min="1"
-                      value={op.durationMins}
-                      onChange={(e) => updateOperation(idx, "durationMins", parseInt(e.target.value) || 30)}
-                      style={inputStyle}
-                    />
-                    <input
-                      placeholder="e.g. Assembly Line A"
-                      value={op.workCenter}
-                      onChange={(e) => updateOperation(idx, "workCenter", e.target.value)}
-                      style={inputStyle}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeOperation(idx)}
-                      style={{
-                        width: 36, height: 36, borderRadius: 9,
-                        border: "1px solid rgba(198,40,40,0.15)",
-                        background: "rgba(198,40,40,0.05)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <Trash2 style={{ width: 14, height: 14, color: "#c62828" }} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </>
           )}
+
+          {operations.length > 0 && (
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 120px 1fr 36px",
+              gap: 8, marginBottom: 6, padding: "0 4px",
+            }}>
+              {["OPERATION NAME","DURATION (MINS)","WORK CENTER",""].map((h) => (
+                <span key={h} style={{ fontSize: 10, fontWeight: 700, color: "#9b6aab", letterSpacing: "0.06em" }}>
+                  {h}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {operations.map((op, i) => (
+            <div key={i} style={{
+              display: "grid", gridTemplateColumns: "1fr 120px 1fr 36px",
+              gap: 8, marginBottom: 8, alignItems: "center",
+            }}>
+              <input
+                type="text" placeholder="e.g. Assembly"
+                style={inputStyle} value={op.name}
+                onChange={(e) => updateOperation(i, "name", e.target.value)}
+              />
+              <input
+                type="number" min={1} placeholder="30"
+                style={inputStyle} value={op.durationMins || ""}
+                onChange={(e) => updateOperation(i, "durationMins", parseInt(e.target.value) || 0)}
+              />
+              <input
+                type="text" placeholder="e.g. Line A"
+                style={inputStyle} value={op.workCenter}
+                onChange={(e) => updateOperation(i, "workCenter", e.target.value)}
+              />
+              <button
+                type="button" onClick={() => removeOperation(i)}
+                style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  border: "1px solid rgba(198,40,40,0.2)",
+                  background: "rgba(198,40,40,0.05)",
+                  color: "#c62828", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <Trash2 style={{ width: 13, height: 13 }} />
+              </button>
+            </div>
+          ))}
         </div>
 
-        {/* Actions */}
-        <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+        {/* Submit */}
+        <div style={{ display: "flex", gap: 10 }}>
           <button
-            type="submit"
-            disabled={isLoading}
+            type="submit" disabled={loading}
             style={{
               flex: 1, height: 48, borderRadius: 12,
-              background: isLoading ? "rgba(139,59,158,0.4)" : "linear-gradient(135deg,#8b3b9e,#be71d1)",
-              color: "#fff", border: "none",
-              fontSize: 14, fontWeight: 600,
-              cursor: isLoading ? "not-allowed" : "pointer",
-              fontFamily: font,
-              boxShadow: isLoading ? "none" : "0 4px 14px rgba(139,59,158,0.28)",
+              background: "linear-gradient(135deg,#8b3b9e,#be71d1)",
+              border: "none", color: "#fff",
+              fontSize: 14, fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer",
+              fontFamily: font, opacity: loading ? 0.7 : 1,
+              boxShadow: "0 4px 14px rgba(139,59,158,0.25)",
             }}
           >
-            {isLoading ? "Creating…" : "Create BOM"}
+            {loading ? "Creating BOM…" : "Create BOM"}
           </button>
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{
-              padding: "0 24px", height: 48, borderRadius: 12,
+
+          <Link href="/bom" style={{ textDecoration: "none" }}>
+            <button type="button" style={{
+              height: 48, padding: "0 24px", borderRadius: 12,
               background: "transparent",
               border: "1px solid rgba(190,113,209,0.3)",
-              color: "#7c5f8a", fontSize: 14, fontWeight: 600,
+              color: "#9b6aab", fontSize: 14, fontWeight: 600,
               cursor: "pointer", fontFamily: font,
-            }}
-          >
-            Cancel
-          </button>
+            }}>
+              Cancel
+            </button>
+          </Link>
         </div>
+
       </form>
     </div>
   )

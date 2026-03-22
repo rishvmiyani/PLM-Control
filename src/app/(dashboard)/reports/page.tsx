@@ -1,10 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 import ReportsGrid from "@/components/reports/ReportsGrid"
-import {
-  BarChart3, TrendingUp, AlertTriangle,
-  Clock, Package, GitPullRequest,
-} from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -65,10 +62,25 @@ export default async function ReportsPage() {
 
   const font = "'DM Sans', sans-serif"
 
-  return (
-    <div style={{ fontFamily: font, maxWidth: 860, padding: "0 4px" }}>
+  const ecos = await prisma.eCO.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      product: { select: { name: true } },
+    },
+  })
 
-      {/* Header */}
+  const serializedECOs = ecos.map((e) => ({
+    id:             e.id,
+    title:          e.title,
+    type:           e.type,
+    productName:    e.product.name,
+    stage:          e.stage,
+    createdAt:      e.createdAt.toISOString(),
+    enteredStageAt: e.enteredStageAt.toISOString(),
+  }))
+
+  return (
+    <div style={{ fontFamily: font, maxWidth: 1000, padding: "0 4px" }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{
           fontSize: "clamp(1.4rem,4vw,1.8rem)",
@@ -84,9 +96,7 @@ export default async function ReportsPage() {
         </p>
       </div>
 
-      {/* Grid (client component handles hover) */}
-      <ReportsGrid reports={reports} />
-
+      <ReportsGrid reports={reports} ecos={serializedECOs} />
     </div>
   )
 }

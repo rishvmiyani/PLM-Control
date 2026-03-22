@@ -9,6 +9,8 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { useSession } from "next-auth/react"
+import Image from "next/image"
+
 
 const NAV = [
   {
@@ -66,31 +68,27 @@ function Sidebar({ isOpen }: Props) {
       }}
     >
       <div style={{ width: 200, display: "flex", flexDirection: "column", height: "100%" }}>
-
-        {/* Logo */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "18px 16px 16px",
-          borderBottom: "1px solid rgba(190,113,209,0.12)",
-        }}>
-        <div style={{
-            width: 72, height: 32, borderRadius: 10,
-            backgroundImage: "url('../public/logo.png')",
-            backgroundSize: "contain",
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "center",
-            backgroundColor: "#e8e4f0",   
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <Layers style={{ width: 16, height: 16, color: "#fff" }} />
-          </div>
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#2d1a38", lineHeight: 1.2 }}>
-              CRISP
-            </p>
-            <p style={{ fontSize: 10, color: "#9b6aab" }}></p>
-               </div>
+      {/* Logo */}
+      <div style={{
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "18px 16px 16px",
+        borderBottom: "1px solid rgba(190,113,209,0.12)",
+      }}>
+        <Image
+          src="/logo.png"
+          alt="CRISP logo"
+          width={72}
+          height={32}
+          style={{ objectFit: "contain" }}
+        />
+        <div>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#2d1a38", lineHeight: 1.2 }}>
+            CRISP
+          </p>
+          <p style={{ fontSize: 10, color: "#9b6aab" }}></p>
         </div>
+</div>
+      
 
         {/* Nav */}
         <nav style={{ flex: 1, overflowY: "auto", padding: "10px 8px" }}>
